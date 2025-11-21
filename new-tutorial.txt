@@ -561,6 +561,7 @@ This was all the CRUD operations.
 29. Having all the routes and the controllers, test them out in Postman application.
 Create new workspace from a blank project (top). Create new blank collection called "PARKINGSPOTS" (top-left).
 Create new request ("+" in PARKINGSPOTS collection). 
+
 This will be a GET request: rename it "GET ALL PARKING SPOTS".
 Type the endpoint: "http://localhost:3000/api/parkingSpots/" 
 (remember: 
@@ -573,45 +574,174 @@ The result is the final endopoint)
 Attention: the server need to be online!
 "PS C:\Users\mazze\pern-app> npm run dev" -> see the log message "Server is running on port 3000".
 
-The responce status will be: 200 OK. (-> Is it normal that I see the id not in descendent order?)
+The responce status will be: 200 OK. 
 
-Create new request: POST, CREATE NEW PARKING SPOT.
+
+Create new request: POST, "CREATE NEW PARKING SPOT".
 Go to the body section and have a reference to the createParkingSpot function:
-
-
+-> "const { street, tot_available } = req.body;"
+The API request don't need a params (no id), but in the body is necessary (both):
 {
-    "street":"Via Don Bedetti 86"
-}
-400 Bad Request
-{
-    "success": false,
-    "message": "All fields are required"
+    "street":"Via ...",
+    "tot_available":40 -> positive number!
 }
 
-
-
-
-export const createParkingSpot = async (req, res) => {
--->    const { street, tot_available } = req.body;
-
-    if (!street || !tot_available) {
-        return res.status(400).json({ success: false, message: "All fields are required" })
+Responce will be:
+{
+    "success": true,
+    "data": {
+        "id": 8,
+        "street": "Via Rizzoli",
+        "tot_available": 40,
+        "created_at": "2025-11-21T11:03:32.529Z"
     }
+}
 
+You can control the newly row by the "GET ALL PARKING SPOTS" API request.
+
+Other request: GET, "GET A SINGLE PARKING SPOT", with endopoint "http://localhost:3000/api/parkingSpots/:id".
+To get a specific element, we can:
+- Insert the id in the params section (in "Path Variables", in corrisponce of "id")
+- Change the "/:id" with the specific one, like "http://localhost:3000/api/parkingSpots/4"
+
+Sending the request, you'll receive "success:true" with all the attributes.
+
+Request: DELETE, "DELETE A SINGLE PARKING SPOT".
+Like the GET request, insert the id of the parking spot.
+
+Request: PUT, "UPDATE PARKING SPOT".
+For now, we are receiving both the elements in request body for "street" and "tot_available", like:
+{
+    "street":"Via Don Bedetti 89",
+    "tot_available":5
+}
+For example, if you want to update only the street name, the number of total spots is still needed,
+even if they remain unchanged.
+In params body, insert also the id number.
+
+Next, we will do the same request from the frontend application.
+
+------------------
+
+30. Definition of rate limiting: strategy for limiting network traffic. 
+It puts a limit on how often someone can repeat an action within a certain timeframe.
+Let's think about a malicious/bad user that wants to send 1000 req/sec.
+Our server would crash in that case, we can't handle that amount of requests per sec.
+So, we're going to put a limit: every user can only send 20 requests per minute.
+How we can keep track of single user or all of them: by the IP address.
+Also, we're implementing bot detection and Shield.
+
+Go to "Arcjet->Docs->Node,js + Express" (https://docs.arcjet.com/get-started?f=node-js-express):
+- "npm install express" -> Already done
+- "npm i @arcjet/node @arcjet/inspect" -> Need to install inspect (updated in the last year)
+- Set the keys (in ".env" file):
+--> ARCJET_KEY=...: copy when creating new account
+--> ARCJET_ENV=development: tells Arcjet you're working locally,
+so it will accept your local IP address (127.0.0.1 or localhost).
+Needed because Node.js doesn't set NODE_ENV for you.
+- We add some code in a new folder, specifically for Arcjet porpouse:
+--> "Backend->lib->arcjet.js"
+("lib" for configure third parties libraries)
+Then look and copy from the documentation.
+
+arcjet.js:
+"
+import arcjet, { tokenBucket, shield, detectBot } from "@arcjet/node";
+
+// Initialize Arcjet
+const aj = arcjet({
+    key: process.env.ARCJET_KEY,
+    characteristics: ["ip.src"],
+    rules: [
+        shield({ mode:"LIVE" }),
+        detectBot({
+            mode:"LIVE",
+            allow:["CATEGORY:SEARCH_ENGINE"],
+        }),
+        tokenBucket({
+            mode: "LIVE",
+            refillRate: 5,
+            interval: 10,
+            capacity: 10
+        }),
+    ],
+});
+
+export { aj };
+"
+
+tokenBucket algorithm params:
+- refillRate: 5 (how many tokens we're going to get)
+- interval: 10 (seconds)
+- capacity: 10 (tokens)
+- requested: 1 (each request consumes 1 token)
+
+With capacity of 10, initially we have 10 tokens:
+0s: 10 tokens
+1s: make 3 req -> 7 tokens left 
+2s: make 3 req -> 4 tokens left
+3s: make 4 req -> 0 tokens left (capacity)
+4s: try req -> rate limited
+10s (interval): refill (+ 5 tokens)
+20s: refil (+5 tokens)
+
+Other algorithm: slidingWindows (instead of tokenBucket).
+Unfortunetly, we can actually test this out only from the homepage (frontend).
+
+In "server.js":
+"
+[...]
+import { aj } from "./arcjet.js";
+import { isSpoofedBot } from "@arcjet/inspect";
+[...]
+
+// Middleware
+[...]
+
+// Apply Arcjet rate limit to all route
+// Just below Middleware
+app.use(async (req,res,next) => {
     try {
-        const newSpot = await sql.query(`
-            INSERT INTO parkingspots (street, tot_available)
-            VALUES (${street}, ${tot_available})
-            RETURNING *
-        `);
+        const decision = await aj.protect(req, { requested:1 });
 
-        console.log("New spot created");
-        res.status(201).json({ success: true, data: newSpot[0] });
+        if (decision.isDenied()) {
+            if (decision.reason.isRateLimit()) {
+                return res.status(429).json({ error: "Too many requests" });
+            } else if (decision.reason.isBot()) {
+                return res.status(403).json({ error: "No bots allowed" });
+            }
+            return res.status(403).json({ error: "Forbidden" });
+            
+        } else if (decision.ip.isHosting()) {
+            return res.status(403).json({ error: "Forbidden" });
+            
+        } else if (decision.results.some(isSpoofedBot)) {
+            return res.status(403).json({ error: "Forbidden" });
+            
+        } 
+        
+        next();
 
     } catch (error) {
-        console.log("Error in createParkingSpot function", error);
-        res.status(500).json({ success: false, message: "Internal server error" }); 
-    };
-};
+        console.log("Arcjet error", error);
+        next(error);
+    }
+});
+
+app.use("/api/parkingSpots", parkingSpotRoutes);
+
+[...]
+"
+"mport dotenv/config" must be the first import in entry file (server.js),
+so environment variables are loaded before any other module tries to use them.
+We don't need to import dotenv also in "arcjet.js" file.
 
 
+
+
+#########################
+ATTENZIONE:
+- cancellando l'elemento con id 4 e inserendo poi un nuovo elemento, questo 
+non avrà id 4, ma id 5.
+- pur volendo modificare un solo attributo con updateParkingSpot, è necessario
+inserire tutti gli elementi (bot required)
