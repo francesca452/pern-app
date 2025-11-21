@@ -1,0 +1,166 @@
+"STARTING THE SERVER "
+On the terminal (create a server folder):
+1. mkdir Pern-App
+2. cd Pern-App
+3. mkdir server
+4. cd server
+5. npm init
+(Support the tracking of all packages inside the application.
+It need some information:
+. package name: (server)
+. version: (1.0.0)
+. description: 
+. entry point: (index.js)
+. test command:
+. git repository:
+. keywords:
+. license: (ISC)
+(To go ahed, click 'space' on the keyboard)
+This will glue the application together)
+6. npm i express pg cors
+(Install all the three libraries: 
+. express: allows to quickly create a server in node.js
+. pg: connect the database with the server in order to run some postgres queries
+. cors: allows different domain application to interact with each other.
+For example, server is going to be running on localhost 5000 and React application on localhost 3000)
+7. touch index.js
+(Or just create a new file in server folder called index.js)
+
+In index.js:
+const express = require("express");
+const app = express(); # App will take express library and run it
+
+Now we are going to create a server.
+First thing: if we want our server to start, we have to listen to the port number
+app.listen(5000, () => {
+    console.log("server has started on port 5000"); # To prove the server is working
+});
+
+8. We test the server by digit in the terminal: node index
+The result will be in the message in the log: "server has started on port 5000"
+
+In order not to use node, we can install globally nodemon because everytime we want
+to see changes we have to restart terminal and turn it back on. So, using nodemon we can 
+look at a single file and when there's a change that's going to be done, it's going 
+to instantly restart the server.
+9. nodemon index
+
+We have to create middleware:
+const cors = require("cors");
+app.use(cors());
+
+Everytime we're building a fullstack application, we need to get data from the client side.
+The only way to get data from the client side is that we have to get it from the request.body object.
+Tiping this instruction:
+app.use(express.json());
+We are allowed to have access to request.body and then we can get .json data
+
+------------
+"CREATE POSTGRES DATABASE AND TABLE"
+Inside the database, there's going to be a lot of other databases. 
+Create a new file in server folder called database.sql.
+Then:
+CREATE DATABASE perntodo;
+
+CREATE TABLE todo(
+    todo_id SERIAL PRIMARY KEY,
+    # Necessary to be unique, so if I want to delete, update or get a specific to_do
+    # I just want to reference to this id
+    # Why PRIMARY KEY: this value for the column can make this entire to_do unique from the other's to_do
+    # Why SERIAL: increase the primary key to ensure uniqueness
+    description VARCHAR(255) # Setting a max character of 255  
+);
+
+Now, is demaing to have postgres installed. If it's already installed, we have to run it by:
+1. psql -U postgres
+(Not in visual studio terminal. -U stand for user, and we want to use postgres as a user)
+Anytime you install Postgres you automatically have a user by default called postgres, which
+is a super admin, that has full access to everything.
+It's necessary to digit the password choosen during installation process of postgres
+
+Now that we are inside the database, we can use the commands below:
+.postgres=# \l: show all my databases
+.postgres=# \c name-db: to connect to the specific database name-db as user postgres 
+.name-db=# \dt: we can look inside the database
+
+To create our own database, we can copy and paste the instruction below in the 
+terminal already opened:
+2. CREATE DATABASE perntodo;
+The respond will be: CREATE DATABASE.
+We can digit name-db=# \l to see the perntodo addedo to our database in postgres 
+3. name-db=# \c perntodo
+Now we are connected to database "perntodo"
+
+Digit: perntodo=# \dt, and we don't find any relations.
+So, we copy and paste in the terminal:
+4. CREATE TABLE todo(
+    todo_id SERIAL PRIMARY KEY,
+    description VARCHAR(255) 
+);
+
+Result: CREATE TABLE
+With command: perntodo=# \dt, we see a new table
+
+5. perntodo=# SELECT * FROM todo;
+We see the two elements "todo_id" and "description"
+
+---------------------
+"CONNECT OUR POSTGRES DATABASE AND SERVER"
+This action is really easy if we use the pg library.
+First, we create a new file called db.js in server folder and we'll going to
+configured how we're going to connect to our database.
+
+We need the pg library:
+const Pool = require("pg").Pool;
+
+Then, we set our configuration inside new Pool:
+const pool = new Pool({
+    user: "postgres",
+    password: "4rancEsc@!",
+    host: "localhost",
+    port: 5432,
+    database: "perntodo"
+});
+
+I select "perntodo" in the section because it's the database we're going to be using.
+It's finished. Now we have to export it by writing:
+module.exports = pool;
+
+Now go back to index.js file and I'm going to require that.
+const pool = require("./db");
+
+We start writing the routes that we're going to be working with with this query stuff.
+// ROUTES //
+// Create a todo
+// Get all todos
+// Update a todo
+// Delete a todo
+We're going to work on each of these routes and we're going to be using
+this new connection that we have (const pool) to run queries on postgres.
+
+------------------
+"BUILD ROUTES WITH POSTGRES QUERIES"
+
+- create a todo:
+app.post("/todos", async(req, res) => {
+    try {    
+    } catch (err) {
+        console.error(err.message);
+    }
+});
+. The reason it's going to be "post" is because we're adding data.
+. "(req, res)" represent requests fromt the client side and response we're going to send back to the client.
+. Why "async": anytime we're creating data or trying to get data, it's gonna take some time. So, async providers
+us something called "await" which waits for the function to complete before it continues.
+. Using also "try-catch" which makes our error handing so much easier: anytime it find an error, 
+it's going to catch it and it's going to throw it out, and is how basic error handling is going to be done.
+
+Inside the try method, we need to be able to get data from the client side to determine
+what exactly I'm wanting do add. We need express.js: app.use(express.json());
+Is needed for "req.body".
+We can test the application or restful API by using the app Postman.
+
+In Postman:
+1. Create something new (+)
+2. Select POST
+3. Digit in POST request the http link: http://localhost:5000/todos
