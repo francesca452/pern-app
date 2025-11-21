@@ -385,7 +385,7 @@ RETURNING id;
 - To see all the changes:
 "SELECT * FROM parkingspots;"
 
-What "RETURNING id" does: whne you insert new rows, PostgreSQL automaticaly creates
+What "RETURNING id" does: when you insert new rows, PostgreSQL automaticaly creates
 ids (because id is SERIAL, at the time of the table creation).
 RETURNING id tells Postgres to: after inserting the rows, give me back the ids you created, 
 and using pgAdmin, the ids will be show directly in the Data Output tab.
@@ -409,60 +409,61 @@ We need to import sql from "db.js" file, to asking query to the database:
 "import { sql } from '../config/db.js';"
 First route:
 - get(All)ParkingSpots in "parkingSpotControllers.js":
-    try {
+"
+try {
         const spots = await sql.query(`
             SELECT * FROM parkingspots -> // * gave all the column 
             ORDER BY created_at DESC -> // order by the created_at field in the descending order
         `);
         # Then, we assign this into a variable called "sposts"
         # and return this as a responce 
-        console.log("Fetched sposts", spots);
-        res.status(200).json({ success: true, data: spots }); # -> 200 if the get is succesfully done
-    } catch (error) {
-    };
+        console.log(`Found ${spots.rows.length} parking spots`);
+        res.status(200).json({ success: true, data: spots.rows }); # -> 200 if the get is succesfully done
+    } catch (error) {...};
+"
 
 What we see in the page at route "http://localhost:3000/api/parkingSposts/" is just:
 - With no elements: "{"success":true,"data":[]}"
 - With some anticipated insert: 
 {"success":true,"data":{"command":"SELECT","rowCount":4,"oid":null,"rows":[{"id":4,"street":"Via Cirro","tot_available":10, ...}
 
-Complete with "catch" section:
-catch (error) {
-    console.log("Error in getParkingSpots function", error);
-    res.status(500).json({ success: false, message: "Internal server error" }); 
-};
+Complete with "catch" section.
+
 
 25. We go with createParkingSpot().
 First, we want to get some data that user will send us, because they want to create a new parking spot.
 They're all coming from req.body:
 "const { street, tot_available } = req.body; "
-It's possible by the middleware "app.use(express.json());": with this, we can destructure these values from the request body.
-Deleting it, the "const {name, ....}" will be undefined in the "parkingSpotController.js" file.
+It's possible by the middleware "app.use(express.json());": with this, we can
+destructure these values from the request body.
 We create an "if" instruction if user didn't send us one of them. 
 "if (!street || !tot_available) {
     return res.status(400).json({ success: false, message: "All fields are required" })
 }"
+
+Maybe, also some control inserting numbers for "tot_available".
 
 Then, the try-and-catch block:
 "
 try {
         const newSpot = await sql.query(`
             INSERT INTO parkingspots (street, tot_available)
-            VALUES (${street}, ${tot_available})
-            RETURNING *
-        `);
+            VALUES ($1, $2)
+            RETURNING *`,
+            [street, tot_available]
+            );
+        // Safer than using: ${street} ${tot_available}
 
         // console.log("New spot created");
-        res.status(201).json({ success: true, data: newSpot[0] });
+        res.status(201).json({ success: true, data: newSpot.rows[0] });
 
-    } catch (error) {
-        console.log("Error in createParkingSpot function", error);
-        res.status(500).json({ success: false, message: "Internal server error" }); 
-    };
+    } catch (error) {...};
 };
 "
-"newSpot" is a record ([]), so we write newSpot[0] to get the newky created spot.
+
+"newSpot" is a record ([]), so we write newSpot.rows[0] to get the newky created spot.
 We're going to test this function with a desktop application in the next moment: Postman.
+
 
 26. Continue to fill the other function: getParkingSpot (get only one spot).
 In "parkingSpotRoutes.js" file, the routes to call the function is:
@@ -470,77 +471,93 @@ In "parkingSpotRoutes.js" file, the routes to call the function is:
 Note that the parameter "id" has to be in repeated in the body function of getParkingSpot.
 (if I choose idx -> then I have to recall the param idx).
 
+"
 export const getParkingSpot = async (req, res) => {
     const { id } = req.params;
 
     try {
         const spot = await sql.query(`
-            SELECT * FROM parkingspots WHERE id=${id}
-        `);
+            SELECT * FROM parkingspots WHERE id=$1`,
+            [id]
+        );
+        // Remember the comma (,) !!
+        // Safer than: `SELECT * FROM parkingspots WHERE id=${id}`
 
-        res.status(200).json({ success: true, data: spot[0] });
+        // Check if the spot exists
+        if (spot.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "Parking spot not found"
+            });
+        }
 
-    } catch (error) {
-        console.log("Error in getParkingSpot function");
-        res.status(500).json({ success: false, message: "Internal server error" });
-    };
+        res.status(200).json({ success: true, data: spot.rows[0] });
+
+    } catch (error) {...};
 }; 
+"
 
 27. It's time for: updateParkingSpot
-# To refer to the right element in the table. Always pay attention to the route
-# that leads to the function (from parkingSpotRoutes to parkingSpotController).
-# In this case, in the routes file: router.put("/:id", updateParkingSpot);
-# has id parameter
-const { id } = req.params; 
-# Because the user would like to update one of this fields, or maybe all of them
-const { street, tot_available } = req.body; 
+Function need to refer to the right element in the table.
+Always pay attention to the route that leads to the function (from parkingSpotRoutes to
+parkingSpotController). In this case, in the routes file: router.put("/:id", updateParkingSpot);
+has id parameter: "const { id } = req.params;"
+
+Because the user would like to update one of this fields, or maybe all of them,
+they are both required (maybe that can change in the next update).
+"
+const { street, tot_available } = req.body;
 
 try {
     const updatedSpot = await sql.query(`
         UPDATE parkingspots
-        SET street=${street}, tot_available=${tot_available}
-        WHERE id=${id}
-        RETURNING * // For return the element updated as a value we should returning all (all the columns of this spot)
-    `);
+        SET street=$1, tot_available=$2
+        WHERE id=$3
+        RETURNING *`,
+        [street, tot_available, id]
+    );
 
-# We also add a check
+    # We also add a check
     if (updatedSpot.length === 0) { # If correct, that means product is not found
         return res.status(404).json({ success: false, message: "Spot not found"});
     }
         
     console.log("Succesfully updated");
-    res.status(200).json({ success: true, data: updatedSpot[0] });
+    res.status(200).json({ success: true, data: updatedSpot.rows[0] });
 
-} ...
+} catch (error) {...};
+"   
+
 
 28. Last one function: deleteParkingSpot.
 It's very similar to updateParkingSpot.
 
+"
 export const deleteParkingSpot = async (req, res) => {
     const { id } = req.params;
 
     try {
         const deletedSpot = await sql.query(`
-            DELETE * FROM parkingspots WHERE id=${id}
-            RETURNING *
-        `);
+            DELETE * FROM parkingspots WHERE id=$1
+            RETURNING *`,
+            [id]
+        );
 
         if(deletedSpot.length === 0) {
             return res.status(404).json({ succes: false, message: "Spot not found" });
         }
 
         console.log("Parking spot removed");
-        res.status(200).json({ success: true, message: deletedSpot[0] });
+        res.status(200).json({ success: true, message: deletedSpot.rows[0] });
 
-    } catch (error) {
-        console.log("Error in deleteParkingSpot function");
-        res.status(500).json({ success: false, message: "Internal server error" });
-    };
+    } catch (error) {...};
 };
+"
 
 This was all the CRUD operations.
 
 ------------------
+
 29. Having all the routes and the controllers, test them out in Postman application.
 Create new workspace from a blank project (top). Create new blank collection called "PARKINGSPOTS" (top-left).
 Create new request ("+" in PARKINGSPOTS collection). 
