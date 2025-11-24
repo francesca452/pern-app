@@ -737,6 +737,155 @@ so environment variables are loaded before any other module tries to use them.
 We don't need to import dotenv also in "arcjet.js" file.
 
 
+--------------------------------------------------------------------
+
+FRONTEND IMPLEMENTATION
+We'll create frontend application.
+
+1. Go to terminal: "cd frontend"
+2. "npm create vite@latest ." // To initialized it into the frontend folder
+3. Choose "React" and "Javascript" (for beginner friendly, but can be used also Typescript)
+(Need to reinstall the latest version of Node.js)
+4. npm install
+5. npm run dev 
+6. We can visit local: http://localhost:5137/.
+You will see a 'default' react application.
+7. We cancel some files:
+- "frontend/src/App.css"
+- "frontend/src/assets"
+- In "frontend/src/App.jsx" cancel all the text and write new one:
+"
+function App() {
+    return (
+        <div>
+            <h1>hey</h1>
+        </div>
+    );
+}
+
+export default App
+"
+
+8. Use Tailwindcss version 3.4.17: click in the top left choise version (v4.1/v3.4.17),
+then go to "Docs->Installation->Framework Guides->Vite->Using React"
+(https://v3.tailwindcss.com/docs/guides/vite).
+In the terminal:
+- Create your project: "npm create vite@latest" -> OK
+- Install Tailwind CSS: "npm install -D tailwindcss@3 postcss autoprefixer"
+- "npx tailwindcss init -p"
+Now in frontend folder there're two more files: "postcss.config.js" and "tailwind.config.js"
+- Configure your template paths: 
+in "tailwind.config.js" file add the code below:
+"
+[...]
+content: [
+    "/index.html",
+    "./src/**/*.{js,ts,jsx,tsx}"
+],
+"
+- Add the Tailwind directives to your CSS:
+in "./src/index.css" file, add the "@tailwind" directive.
+Cancel everything that we have in the file and add:
+"
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+"
+
+To test the correct connection with Tailwind, go to "frontend/src/App.jsx" and add
+a className to the <h1> tag: "<h1 className="text-red-500">".
+If it's not available the auto suggestion, go to extensions option of vscode and install:
+- Tailwind CSS IntelliSense
+- ES7+ React/Redux/React-Native
+(for example: if I type "rfce", I will see some default code).
+
+9. "npm run dev" to restart the frontend (the path has to be "[...]pern-app\frontend> npm run dev").
+10. Go to DaisyUI v4x and install that, as the pre-built components on top of Tailwind:
+(https://v4.daisyui.com/docs/install/).
+- In the terminal type: "npm i -D daisyui@v4"
+- Add daisyUI to "tailwind.config.js" (using import-export):
+"
+import daisyui from "daisyui";
+export default {
+    [...]
+    plugins: [daisyui],
+}
+"
+If you want some different daisyui themes, you can add them like:
+"
+import daisyui from "daisyui";
+export default {
+    [...]
+    plugins: [daisyui],
+    daisyui: {
+        themes: [
+        "pastel",
+        "retro", 
+        [...]
+        ],
+    }
+}
+"
+
+11. Other installation: "npm i react-hot-toast react-router-dom axios zustand lucide-react"
+- "react-hot-toast": library that shows notification
+- "react-router-dom": allows us to have the navigation in place (to have links, different pages)
+- "axios": to fetch data and to send requests (replacement for "fetch API")
+- "zustand": for global state
+- "lucide-react": package used for icons -> FOR NOW I DON'T WANT TO INSTALL THIS
+
+12. Create two different folders in "frontend/src": "components" and "pages".
+13. In "pages" create "HomePage.jsx" file: type "rfce" to get the initial code.
+14. Also create "ParkingSpotsPage.jsx", type rfce.
+15. For the components, let's say we have: "Navrbar.jsx".
+16. In "App.jsx" delete latest <h1> element and write:
+"
+import Navbar from "./components/Navbar.jsx";
+import HomePage from "./pages/HomePage.jsx";
+import ParkingSpotPage from "./pages/ParkingSpotPage.jsx";
+
+import { Routes, Route } from "react-router-dom";
+
+function App() {
+  return (
+    <div className="min-h-screen bg-base-200 transition-colors duration-300">
+      
+      <Navbar />
+
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/parkingSpot/:id" element={<ParkingSpotPage />} />
+      </Routes>
+
+    </div>
+  );
+}
+
+export default App
+"
+
+Import the component and the pages, call it like a tag (React syntax).
+"react-router-dom" allows to change the pages by selecting a different route.
+For now, the Navbar is fixed on top of the page, and then:
+- "htpp://localhost:5173/" --> Navbar / HomePage
+- "http://localhost:5173/parkingSpot/23": --> Navbar / ParkingSpotPage
+
+It is just to understand how do the pages work.
+What makes this possible is also the "<BrowserRouter>" tag in "main.jsx" page,
+that could be also used to incampsule all the code in "App.jsx".
+"
+createRoot(document.getElementById('root')).render(
+  <StrictMode>
+    <BrowserRouter>
+      <App />
+    </BrowserRouter>
+  </StrictMode>,
+)
+"
+
+17. Now we can start the functionality of the navbar.
+
+
 
 
 #########################
