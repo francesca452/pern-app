@@ -969,6 +969,323 @@ The 8 stand for element (products, but for our will be parking spots).
 Now we can also adjust the "theme color" choice, inserting new component.
 
 
+[..........]
+Look at the commit "theme selection from the navbar"
+[..........]
+
+
+18. Fetch the data that we have in the database.
+I don't want to fetch the data in the "HomePage" component, but from another file: "store\useParkingSpotsData.js".
+"
+import { create } from "zustand";
+
+export const useParkingSpotsData = create((set,get) => ({
+    // Spot state
+    spots: [],
+    loading: false,
+    error: null,
+}))
+"
+Once we fetch the spots, the attribute will update.
+
+import { create } from "zustand";
+import axios from "axios";
+
+const BASE_URL = "http://localhost:3000";
+
+export const useParkingSpotsData = create((set,get) => ({
+    # Spot state
+    spots: [],
+    loading: false,
+    error: null,
+
+    fetchSpots: async () => {
+        set({ loading:true }); # Because we're trying to fetch some data
+    
+        try {
+            const response = await axios.get(`${BASE_URL}/api/parkingSpots/`) // We want to send a get request with the help of axios
+            set({ spots:response.data.data, error:null });
+            
+            # Because the first data comes from axios.
+            # The second data comes from our API in "parkingSpotControllers.js":
+            # -> getParkingSpots() (for example):
+            # [...]
+            # res.status(200).json({
+            # success: true,
+            # data: spots.rows --> THIS DATA FIELD
+            # });    
+
+            "error:null" because we're in the try (so successfull) field
+
+        } catch (err) {
+            # Rate limiting
+            if(err.status === 429) set({ error: "Rate limit exceeded" });
+            else set({ error: "Something went wrong" });
+
+        } finally { # Either we succeeded or not, we wanna set the loading state to false
+            set({ loading:false });
+        }
+    }
+}));
+
+Pay attention:
+- In "backend\server.js": "const PORT = process.env.PORT || 3000;"
+The localhost set to 3000.
+- Also: "app.use("/api/parkingSpots", parkingSpotRoutes);"
+Endopoint to do some request: "http://localhost:3000/api/parkingSpots".
+- In "backend\routes\parkingSpotRoutes.js": "router.get("/", getParkingSpots);". 
+To do get request for "getParkingSpots()" set the endpoint: "http://localhost:3000/api/parkingSpots/".
+
+So, in "frontend\store\useParkingSpotsData.js":
+- const BASE_URL = "http://localhost:3000";
+- const response = await axios.get(`${BASE_URL}/api/parkingSpots/`)
+
+Now, go to "frontend\pages\HomePage.jsx" and try to call the function to fetch:
+"
+import React from "react";
+import { useEffect } from "react";
+import { useParkingSpotsData } from "../store/useParkingSpotsData";
+
+function HomePage() {
+  const { spots, loading, error, fetchSpots } = useParkingSpotsData(); 
+
+  # We call the function "fetchSpots" with "useEffect":
+  useEffect(() => {
+    fetchSpots()
+  }, [fetchSpots]);
+
+  console.log("spots:", spots);
+
+  return (
+    <div>HomePage</div>
+  )
+}
+
+export default HomePage;
+"
+
+In the console on web, we see spots (6) because these are the elements already in our database.
+The get fetch function allows us to fetch the data (without using postman, but directly in the web application).
+
+Now, we want to display them and we're gonna write the code in the "HomePage" return section:
+"
+import { PlusCircleIcon, RefreshCwIcon } from "lucid-react";
+[...]
+
+return (
+    <main className="max-w-6xl mx-auto px-4 py-8">
+      <div className="flex justify-between items-center mb-8">
+        -> The functionality of this will be presented later
+        <button className="btn btn-primary ">
+          <PlusCircleIcon className="size-5 mr-2" />
+          Add spot
+        </button>
+
+        -> Button to recall the fetch function (refresh the page with all elements)
+        <button className="btn btn-ghost btn-circle" onClick={ fetchSpots }>
+          <RefreshCwIcon className="size-5" />
+        </button>
+
+      </div>
+    </main>
+  )
+"
+
+Code to show an error indicator:
+"
+import SpotCard from "../components/SpotCard.jsx";
+[...]
+    <main>
+    [...]
+
+      -> Classes come from daisyui:
+      -> What we rendere in case of error (not null from the fetch request)
+      {error && <div className="alert alert-error mb-8">{ error }</div>}
+
+      -> What we render during loading state:
+      {loading ? (
+        <div className="flex justify-center items-center h-64">
+          <div className="loading loading-spinner loading-lg" />
+        </div>
+      ) : (
+        -> In case of not loading, get each spots and for each spot we wold like 
+          to return a component called SpotCard, a component that we're going to create
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {spots.map(spot => (
+            <SpotCard key={spot.id} spot={spot} />
+          ))}
+        </div>
+      )}
+
+    </main>
+"
+
+Where "components\SpotCard.jsx" is:
+"
+import React from "react";
+
+function SpotCard({spot}) {
+    console.log(spot);
+
+    return (
+        <div>SpotCard</div>
+    )
+}
+
+export default SpotCard;
+"
+It may has a problem with properties (spot)
+(warning in the tutorial was like: spot is missing in props validation eslint(react/prop-types)).
+Go to "frontend\eslint.config.js" and scroll to the "rules" field:
+"react/prop-types": "off"
+--> FOR NOW I DON'T WRITE THIS.
+
+In the web page we can see 6 "SpotCard".
+Now, we type some other text in the return field:
+"
+import React from "react";
+import { Link } from "react-router-dom";
+import { EditIcon, Trash2Icon } from "lucide-react";
+
+function SpotCard({spot}) {
+
+    return (
+        <div className="card bg-base-100 shadow-xl hover:shadow-2xl transition-shadow duration-300">
+            
+            {/* SPOT IMAGE */}
+            {/*
+            <figure className="relative pt-[56.25%]">
+                <img src={spot.image} alt={spot.street} className="absolute top-0 left-0 w-full h-full object-cover" />
+            </figure>
+            */}
+
+            <div className="card-body">
+                {/* SPOT INFORMATION */}
+                <h2 className="card-title text-lg font-semibold">{ spot.street }</h2>
+                <p className="text-2xl font-bold text-primary">{spot.tot_aviable}</p>
+
+                {/* CARD ACTIONS:
+                - Edit button: once click will take you to the spot page.
+                The page will be created later
+                - Delete button
+                */}
+                <div className="card-actions justify-end mt-4">
+                    <Link to={`/spot/${spot.id}`} className="btn btn-sm btn-info btn-outline">
+                        <EditIcon className="size-4" />
+                    </Link>
+
+                    <button className="btn btn-sm btn-error btn-outline">
+                        <Trash2Icon className="size-4" />
+                    </button>
+
+                </div>
+
+                
+            </div>
+            
+
+        </div>       
+    )
+}
+
+export default SpotCard;
+"
+
+To see if the rate limiting error work, click in teh web page numerous number of times the refresh button:
+you will see the messa in a red box on top of the page saying "Rate limiting exceeded".
+When we see this message, we can't see the spots.
+Let's fix this:
+go to "useParkingSpotsData", in the "catch" field:
+"
+catch (err) {
+    if(err.status === 429) set({ error: "Rate limit exceeded", spots: [] });
+    else set({ error: "Something went wrong", spots: [] });    
+}
+"
+Add the "spots: []" to stop seeing the elements.
+
+
+Now, we go back to "useParkingSpotsData" and add a function to delete a product.
+The function will be call once you click on the delete icon in "SpotCard".
+"
+// It's necessary the id of the spot that we're gonna delete
+    deleteSpot: async (id) => {
+        set({ loading: true });
+
+        try {
+            await axios.delete(`${BASE_URL}/api/parkingSpots/${id}`);
+            // We're gonna reset the previous state after the delete
+            set((prev) => ({ spots: prev.spots.filter(spot => spot.id !== id )}));
+            toast.success("Product deleted successfully");
+
+        } catch (err) {
+            console.log("Error in deleteSpot function", err);
+            toast.error("Something went wrong"); 
+        
+        } finally {
+            set({ loading: false });
+        }
+
+    },
+"
+Need the import of "import toast from "react-hot-toast";", because
+we want to see if the spot is deleted (but we don't want to use the same
+red message used to rate limiting error).
+In "App.jsx" file, we need to add:
+"
+import { Toaster } from "react-hot-toast"; <-- THIS IMPORT
+
+function App() {
+  const { theme } = useThemeStore();
+  
+  return (
+    <div className="min-h-screen bg-base-200 transition-colors duration-300" data-theme={ theme }>
+      
+      <Navbar />
+
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/parkingSpot/:id" element={<ParkingSpotPage />} />
+      </Routes>
+
+      <Toaster /> <--- ADD THIS
+
+    </div>
+  );
+}
+"
+
+Now, we can call the function in the "SpotCard" component:
+"
+<button
+    className="btn btn-sm btn-error btn-outline"
+    onClick={() => deleteSpot(spot.id)} <-- ADD THIS
+>
+    <Trash2Icon className="size-4" />
+</button><>
+"
+
+To finish, we add a comment if the database is empty.
+We add some code in "HomePage.jsx" after the error line:
+"
+import { PlusCircleIcon, RefreshCwIcon, PackageIcon } from "lucide-react";
+[...]
+
+{spots.length === 0 && !loading && (
+    <div className="flex flex-col justify-center items-center h-96 space-y-4">
+        <div className="bg-base-100 rounded-full p-6">
+            <PackageIcon className="size-12" />
+        </div>
+        <div className="text-center space-y-2">
+            <h3 className="text-2xl font-semibold">No spots found</h3>
+            <p className="text-gray-500 max-w-sm">
+              Get started by adding first spots to the inventory
+            </p>
+        </div>
+    </div>
+)}
+"
+
 
 
 
