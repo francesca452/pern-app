@@ -691,7 +691,7 @@ Unfortunetly, we can actually test this out only from the homepage (frontend).
 In "server.js":
 "
 [...]
-import { aj } from "./arcjet.js";
+import { aj } from "./lib/arcjet.js";
 import { isSpoofedBot } from "@arcjet/inspect";
 [...]
 
@@ -832,7 +832,7 @@ export default {
 - "react-router-dom": allows us to have the navigation in place (to have links, different pages)
 - "axios": to fetch data and to send requests (replacement for "fetch API")
 - "zustand": for global state
-- "lucide-react": package used for icons -> FOR NOW I DON'T WANT TO INSTALL THIS
+- "lucide-react": package used for icons
 
 12. Create two different folders in "frontend/src": "components" and "pages".
 13. In "pages" create "HomePage.jsx" file: type "rfce" to get the initial code.
@@ -884,7 +884,99 @@ createRoot(document.getElementById('root')).render(
 "
 
 17. Now we can start the functionality of the navbar.
+In the first div:
+- <div className="bg-base-100/80 backdrop-blur-lg border-b border-base-conten/10 sticky top-0 z-50">
+Then will have one more <div> with some classes:
+- <div className="max-w-7xl mx-auto">
+Then the wrapper for the navbar class:
+- <div className="navbar px-4 minh-[4rem] justify-between">
+(the "navbar" is a class of daisyui)
+Insert now the logo, once clicked leds to the "HomePage".
 
+The code below comes from Tailwindcss utility classes:
+"
+import { Link } from "react-router-dom";
+import { ShoppingCartIcon } from "lucid-react";
+[...]
+
+<div className="flex-1 lg:flex-none">
+    <Link to="/" className="hover-opacity-80 transition-opacity">
+        <div className="flex items-center gap-2">
+            <ShoppingCartIcon className="size-9 text-primary" />
+            <span className="font-semibold font-mono tracking-widest text-2xl bg-clip-text text-trasparent bg-gradient-to-r from-primary to-secondary">
+                POSGRES PARKING SPOT
+            </span>
+        </div> 
+    </Link>
+</div>
+"
+
+To change the color theme of the application, go to "App.jsx" theme and in the
+<div> in the return section, and add "data-theme" attribute (choose between theme in "tailwind.config.js"):
+"
+<div className="min-h-screen bg-base-200 transition-colors duration-300" data-theme="cupcake">
+"
+
+Now, in "http://localhost:5173" we see the navbar modify.
+To add some elements in the right part, we write:
+"
+import { Link, useResolvedPath } from "react-router-dom";
+import { ShoppingBagIcon, ShoppingCartIcon } from "lucide-react";
+
+function Navbar() {
+  const { pathname } = useResolvedPath();
+  const isHomePage = pathname === "/";
+
+  return(
+  [...]
+
+    {/* RIGHT SECTION */}
+        <div className="flex items-center gap-4">
+            <p>ThemeSelector</p>
+
+            { isHomePage && (
+              <div className="indicator">
+                <div className="p-2 rounded-full hover:bg-base-200 transition-colors">
+                  <ShoppingBagIcon className="size-5" />
+                  <span className="badge badge-sm badge-primary indicator-item">
+                    8
+                  </span>
+                </div>
+              </div>
+            )}
+        </div>
+  [...]
+
+)
+}
+"
+
+The hook "useResolvePath" comes from react-router-dom. From this, we destructure the path name:
+"isHomePage" will be true if "pathname === "/"", and we can show the element in the {...}:
+"
+<div className="indicator">
+    <div className="p-2 rounded-full hover:bg-base-200 transition-colors">
+        <ShoppingBagIcon className="size-5" />
+        <span className="badge badge-sm badge-primary indicator-item">
+            8
+        </span>
+    </div>
+</div>
+"
+
+The 8 stand for element (products, but for our will be parking spots).
+
+Now we can also adjust the "theme color" choice, inserting new component.
+
+
+
+
+
+#########################
+To launch backend:
+- pern-app> npm run dev
+In another tab, launch frontend:
+- pern-app\frontend> npm run dev
 
 
 

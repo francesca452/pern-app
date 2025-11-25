@@ -6,7 +6,7 @@ import dotenv from "dotenv";
 
 import parkingSpotRoutes from "./routes/parkingSpotRoutes.js";
 import { sql } from "./config/db.js";
-import { aj } from "./arcjet.js";
+import { aj } from "./lib/arcjet.js";
 import { isSpoofedBot } from "@arcjet/inspect";
 
 dotenv.config({ quiet: true });
