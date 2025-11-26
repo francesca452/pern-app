@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { useParkingSpotsData } from "../store/useParkingSpotsData";
 import { PlusCircleIcon, RefreshCwIcon, PackageIcon } from "lucide-react";
 import SpotCard from "../components/SpotCard.jsx";
+import AddSpotModal from "../components/AddSpotModal.jsx";
 
 function HomePage() {
   const { spots, loading, error, fetchSpots } = useParkingSpotsData(); 
@@ -17,7 +18,9 @@ function HomePage() {
     <main className="max-w-6xl mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-8">
 
-        <button className="btn btn-primary ">
+        <button className="btn btn-primary"
+          onClick={() => document.getElementById("add_spot_modal").showModal()}
+        >
           <PlusCircleIcon className="size-5 mr-2" />
           Add spot
         </button>
@@ -27,6 +30,8 @@ function HomePage() {
         </button>
 
       </div>
+
+      <AddSpotModal />
 
       {error && <div className="alert alert-error mb-8">{ error }</div>}
 

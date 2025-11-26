@@ -8,6 +8,15 @@ export const useParkingSpotsData = create((set, get) => ({
     spots: [],
     loading: false,
     error: null,
+    
+    formData: {
+        street:"",
+        tot_available:0
+    },
+    
+    setFormData: (formData) => set({ formData }),
+    resetForm: () => set({ formData: { street:"", tot_available:0 } }),
+
 
     fetchSpots: async () => {
         set({ loading: true }); 
@@ -41,6 +50,27 @@ export const useParkingSpotsData = create((set, get) => ({
             set({ loading: false });
         }
 
+    },
+
+    addSpot: async (e) => {
+        e.preventDefault();
+        set({ loading: true });
+
+        try {
+            const { formData } = get();
+            await axios.post(`${BASE_URL}/api/parkingSpots/`, formData); 
+            await get().fetchSpots();
+            get().resetForm();
+            toast.success("Spot added successfully");
+            document.getElementById("add_spot_modal").close();
+
+        } catch (err) {
+            console.log("Error in addSpot function", err);
+            toast.err("Something went wrong");
+
+        } finally {
+            set({ loading: false });
+        }
     },
 
 }));
