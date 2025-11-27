@@ -1478,7 +1478,121 @@ document.getElementById("add_spot_modal").close();
 in the try field below the "toast.success".
 
 
-21.
+21. Now we build the parking spot page.
+Go to "useParkingSpotsData.js" and add new functions: "fetchSpot" and "updateSpot".
+We need to create a new state to be able to keep track of the current spot, so when
+we click on the web application to the modify icon, we open the page of the spot with the right data.
+In the same file, write: "currentSpot: null".
+Initially, is going to be null, once we fetch the spot we will make this to be the current spot.
+
+"
+fetchSpot: async (id) => {
+    set({ loading: true });
+        
+    try {
+        const response = await axios.get(`${BASE_URL}/api/parkingSpots/${id}`);
+        set({ currentSpot: response.data.data,
+            formData: response.data.data, // Pre-fill the form with current spot data
+            error: null,
+        });
+
+    } catch (err) {
+        console.log("Error in fetchSpot function", err);
+        set({ error: "Something went wrong", currentSpot: null });
+
+    } finally {
+        set({ loading: false });
+    }
+},
+"
+
+"
+updateSpot: async(id) => {
+        set({ loading: true });
+
+        try {
+            const { formData } = get();
+            const response = await axios.put(`${BASE_URL}/api/parkingSpots/${id}`, formData);
+            set({ currentSpot: response.data.data });
+            toast.success("Spot update successfully");
+
+        } catch (err) {
+            toast.error("Something went wrong");
+            console.log("Error in updateSpot function", err);
+
+        } finally {
+            set({ loading: false });
+        }
+    },
+"
+
+Now go to "ParkingSpotPage" component and destructure the data.
+First thing first, we take the values from "useParkingSpotsData".
+"
+const { 
+    currentSpot,
+    formData,
+    setFormData,
+    loading,
+    error,
+    fetchSpot,
+    updateSpot,
+    deleteSpot,
+  } = useParkingSpotsData();
+"
+Also other constants from package "react-router-dom":
+"
+const navigate = useNavigate();
+// To be able to fetch the spot id in the url
+const { id } = useParams();
+--> const is called "id" because in the url that field (.../api/parkingSpots/id) IS CALLED "ID"
+"
+
+Add:
+"
+useEffect(() => {
+    fetchSpot(id)
+  }, [fetchSpot, id]);
+
+console.log(currentSpot);
+"
+
+ATTENTION: correction in "SpotCard" component.
+<Link to={`/parkingSpot/${spot.id}`} className="btn btn-sm btn-info btn-outline">
+
+--> Link before doesn't match the url saved in "App.jsx":
+<Route path="/parkingSpot/:id" element={<ParkingSpotPage />} />
+
+Now it's working and we have the clue that out function is working properly.
+Let's add a loading state to update the ui.
+If we have an error, then update the ui with the error message.
+If we don't have an error and a loading state, then we can actually return the ui.
+"
+if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="loading loading-spinner loading-lg" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="alert alert-error">{ error }</div>
+      </div>
+    );
+  }
+"
+The actual ui:
+"
+
+"
+We can also use Link to navigate users to the different pages.
+
+
+
+
 
 
 

@@ -17,6 +17,7 @@ export const useParkingSpotsData = create((set, get) => ({
     setFormData: (formData) => set({ formData }),
     resetForm: () => set({ formData: { street:"", tot_available:0 } }),
 
+    currentSpot: null,
 
     fetchSpots: async () => {
         set({ loading: true }); 
@@ -67,6 +68,43 @@ export const useParkingSpotsData = create((set, get) => ({
         } catch (err) {
             console.log("Error in addSpot function", err);
             toast.err("Something went wrong");
+
+        } finally {
+            set({ loading: false });
+        }
+    },
+
+    fetchSpot: async (id) => {
+        set({ loading: true });
+        
+        try {
+            const response = await axios.get(`${BASE_URL}/api/parkingSpots/${id}`);
+            set({ currentSpot: response.data.data,
+                formData: response.data.data,
+                error: null,
+             });
+
+        } catch (err) {
+            console.log("Error in fetchSpot function", err);
+            set({ error: "Something went wrong", currentSpot: null });
+
+        } finally {
+            set({ loading: false });
+        }
+    },
+
+    updateSpot: async(id) => {
+        set({ loading: true });
+
+        try {
+            const { formData } = get();
+            const response = await axios.put(`${BASE_URL}/api/parkingSpots/${id}`, formData);
+            set({ currentSpot: response.data.data });
+            toast.success("Spot update successfully");
+
+        } catch (err) {
+            toast.error("Something went wrong");
+            console.log("Error in updateSpot function", err);
 
         } finally {
             set({ loading: false });
