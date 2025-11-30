@@ -1729,7 +1729,109 @@ We're testing the function by opening new terminal:
 "...\pern-app> node backend/seeds/spots.js" and run.
 Now If you refresh on the web app, you will see the newly database.
 
+------------
+23. Current state of the application:
+- We are running our react application on localhost:5173
+- Running our API, express server, on localhost:3000
+Insetad of deploying these two separately, I would like to have both of them 
+under the same domain. So, we will serve both of these under port 3000.
+The entry point will be the backend and from here we will serve also the
+static assets, which is going to be the frontend, the react application.
 
+To configure this:
+- Go to "frontend/" and delete the "node_modules" folder.
+- Also delete the "node_modules" in the main "pern-app" folder
+- There are two ".gitignore" (one in main folder, one inside frontend).
+Cancel the once in "frontend" and copy all its content in the other one:
+"
+.env
+
+# FRONTEND
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+" 
+(Without specify that the elements comes from the "frontend" folder).
+
+- Go to package.json in "pern-app" folder and create new script:
+"build": "npm install && npm install --prefix frontend && npm run build --prefix frontend"
+To run: "npm run build"
+- Other script:
+"start": "node backend/server.js"
+
+- Now, go to "server.js":
+"
+import path from "path"; // Built in module
+
+[...]
+// To keep track of the directory that we are in
+const __dirname = path.resolve();
+
+[...]
+app.use("/api/parkgingSpots", parkingSpotRoutes);
+
+if (process.env.NODE_ENV==="production") {
+    // Server our React application (static assets)
+    app.use(express.static(path.join(__dirname, "/frontend/dist")));
+
+    app.get("*", (req,res) => {
+        res.sendFile(path.resolve(__dirname, "frontend", "dist", "index.html"));
+    });
+}
+"
+
+And in ".env" type:
+"
+NODE_ENV=development
+"
+
+Go to "useParkingSpotsData.js" and look at the BASE_URL:
+"
+// Base url will be dynamic depending on the environment 
+const BASE_URL = import.meta.env.MODE === "development" ? "http://localhost:3000" : "my_domain.com";
+"
+
+Test this out by changing "NODE_ENV=production", and run:
+"npm run build
+npm start"
+
+
+
+- Go to "server.js" and modify "app.use(helmet());":
+"
+app.use(helmet({
+    contentSecurityPolicy: false,
+}));
+"
+(Because in the tutorial there was a problem rendering the images)
+
+- Go to "arcjet.js" and change the rate limiting params:
+"
+refillRate: 30,
+interval: 5,
+capacity: 20,
+"
 
 
 

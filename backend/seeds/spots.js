@@ -9,6 +9,10 @@ const SAMPLE_SPOTS = [
         street: "Via Antonio 9/3a",
         tot_available: 15,
     },
+    {
+        street: "Via Altabella 59",
+        tot_available: 39
+    },
 ];
 
 async function seedDatabase() {
