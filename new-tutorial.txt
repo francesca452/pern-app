@@ -1729,8 +1729,24 @@ We're testing the function by opening new terminal:
 "...\pern-app> node backend/seeds/spots.js" and run.
 Now If you refresh on the web app, you will see the newly database.
 
-------------
-23. Current state of the application:
+- Go to "server.js" and modify "app.use(helmet());":
+"
+app.use(helmet({
+    contentSecurityPolicy: false,
+}));
+"
+(Because in the tutorial there was a problem rendering the images)
+
+- Go to "arcjet.js" and change the rate limiting params:
+"
+refillRate: 30,
+interval: 5,
+capacity: 20,
+"
+
+########################
+
+Current state of the application:
 - We are running our react application on localhost:5173
 - Running our API, express server, on localhost:3000
 Insetad of deploying these two separately, I would like to have both of them 
@@ -1815,26 +1831,22 @@ const BASE_URL = import.meta.env.MODE === "development" ? "http://localhost:3000
 Test this out by changing "NODE_ENV=production", and run:
 "npm run build
 npm start"
-
-
-
-- Go to "server.js" and modify "app.use(helmet());":
-"
-app.use(helmet({
-    contentSecurityPolicy: false,
-}));
-"
-(Because in the tutorial there was a problem rendering the images)
-
-- Go to "arcjet.js" and change the rate limiting params:
-"
-refillRate: 30,
-interval: 5,
-capacity: 20,
 "
 
+########################
 
-
+The best way to start both your frontend (Vite) and backend
+(Node/Express with Nodemon) with a single command from the root directory is to use
+the concurrently package.
+This setup is ideal for development because it runs the separate dev servers,
+leveraging React's fast hot-reloading (Vite on 5173) while the backend API
+runs on its port (3000), allowing the frontend to proxy/call the API as it does now.
+- Install concurrently in the root directory (pern-app):
+"npm install concurrently --save-dev"
+- 
+"
+"dev": "concurrently \"npm run dev --prefix frontend\" \"nodemon backend/server.js\"",
+"
 
 #########################
 To launch backend:
@@ -1842,9 +1854,15 @@ To launch backend:
 In another tab, launch frontend:
 - pern-app\frontend> npm run dev
 
-
+Now just: npm run start (with concurrently)
 
 #########################
+
+docker compose up
+Stop the application by: docker compose down 
+
+
+##################################
 ATTENZIONE:
 - cancellando l'elemento con id 4 e inserendo poi un nuovo elemento, questo 
 non avrà id 4, ma id 5.

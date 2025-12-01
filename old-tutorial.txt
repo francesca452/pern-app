@@ -164,3 +164,75 @@ In Postman:
 1. Create something new (+)
 2. Select POST
 3. Digit in POST request the http link: http://localhost:5000/todos
+
+
+
+docker-compose.yml
+version: '3'
+
+services:
+  postgres:
+    image: postgres
+    restart: always
+    environment:
+      - POSTGRES_USER=your_postgres_user
+      - POSTGRES_PASSWORD=your_postgres_password
+      - POSTGRES_DB=your_database_name
+    ports:
+      - "5432:5432"
+
+  backend:
+    build: ./backend
+    restart: always
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./backend:/usr/src/app
+    depends_on:
+      - postgres
+    environment:
+      - PGHOST=postgres
+      - PGUSER=your_postgres_user
+      - PGPASSWORD=your_postgres_password
+      - PGDATABASE=your_database_name
+  
+  frontend:
+    build: ./frontend
+    restart: always
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/usr/src/app
+
+
+frontend:
+FROM node:16
+
+WORKDIR /usr/src/app
+
+COPY package*.json ./
+
+RUN npm install
+
+COPY . .
+
+EXPOSE 3000
+
+CMD [ "npm", "start" ]
+
+
+backend:
+FROM node:16
+
+WORKDIR /usr/src/app
+
+COPY package*.json ./
+
+RUN npm install
+
+COPY . .
+
+EXPOSE 3001
+
+CMD ["npm", "start"]
+
