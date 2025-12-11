@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: always
+    environment:
+      - POSTGRES_USER=my_db_user
+      - POSTGRES_PASSWORD=my_db_password
+      - POSTGRES_DB=my_parking_db
+    ports:
+      - "5432:5432"
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile 
+    restart: always
+    environment:
+      - PGHOST=postgres
+      - PGUSER=my_db_user
+      - PGPASSWORD=my_db_password
+      - PGDATABASE=my_parking_db
+      - PGPORT=5432
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./backend:/usr/src/app/backend
+      - ./package.json:/usr/src/app/package.json
+      - ./package-lock.json:/usr/src/app/package-lock.json
+    depends_on:
+      - postgres
+
+  frontend:
+    build:
+      context: ./frontend  
+      dockerfile: Dockerfile
+    restart: always
+    ports:
+      - "3000:5173"
+    volumes:
+      - ./frontend:/usr/src/app
+    environment:
+      - VITE_API_URL=http://backend:3001
+    depends_on:
+      - backend

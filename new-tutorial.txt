@@ -1,591 +1,490 @@
-TUTORIAL: https://www.youtube.com/watch?v=lx3YJj0nJVk&t=10025s
+FULL STACK APPLICATION: https://www.youtube.com/watch?v=lx3YJj0nJVk&t=10025s
+DATABASE CONNECTION: https://www.youtube.com/watch?v=VaJPdtuql8k
 
-1. cd pern-app
-2. code .
-3. mkdir backend
-4. mkdir frontend
-5. nmp init -y
-
-6. npm i express dotenv cors helmet morgan @neondatabase/serverless @arcjet/node
-"npm install" - for installing packages or libraries on backend.
-We need to install express not in the backend ("cd backend") but in the pern-app enviorment.
-You can look at your express version in package-lock.json (search for "express")
-
-7. In backend folder create a new file called server.js 
-8. Go to package.json file and modify "main" entry point, from "index.js" to "backend/server.js"
-
-9. In server.js write "import express from "express";"
-Is another way to say "const express = require("express");".
-We have to insert below "author" entry point in package.json the entry point "type":
-"type": "module" -> the default way is "commonjs", related to "const express = ...".
-
-10. In server.js:
-const app = express();
-app.listen(3000, () => {
-    console.log("Server is running on port 3000");
-});
-Then in terminal digit "node backend/server.js". This run the server.
-But, instead of doing this every single time, we should create a script.
-In package.json delete the "test" script, write new "dev" script:
-"scripts": {
-    "dev": "node backend/server.js"
-},
-In terminal, instead of "node/nodemon backend/server.js", we'll digit "npm run dev"
-Now, in the terminal we see "server is running on port 3000" -> good that we don't see
-"[nodemon] clean exit - waiting for changes before restart", meaning that the connection to
-the server is shut down.
-
-11. npm i nodemon -D
-We see that the server is running on 3000 port. If we change "app.listen(3001, ...)"
-and save, nothing change. If we want to restart the server automatically once we do a change
-like this, we can use a package that kill the terminal.
-After the command, we see "devDepencencies" new in package.json file
-We can change the istruction to see the port changing:
-
-const PORT = 3000;
-app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
-});
---> LATER WE'LL USE IN ANOTHER WAY "PORT", so don't change.
-
-12. First trying of request (in server.js file):
-app.get("/", (req, res) => {
-    res.send("Hello from the backend");
-});
-
-We can see the res sent in new tab in browser, at "http://localhost:PORT" (like :3000).
-We can have also a route:
-app.get("/test", (req, res) => {
-    res.send("Hello from the test route");
-});
-
-and visualizable at "http://localhost:3000/test".
-If you get wrong http link, you'll receive: "Cannot GET /".
-
-13. We want to create an API. In server.js:
-import helmet from "helmet";
-import morgan from "morgan";
-
-Before using the packages, we do a preliminary test for response:
-app.get("/test", (req, res) => {
-    console.log(res.getHeaders());
-    res.send("hello from the test route");
-});
-
-In the terminal we only see information about: "x-powered-by": "Express".
-Now, insert a middleware before app.get:
-app.use(helmet());
-
-Once we refresh the web page, we see in the terminal a lot of informations.
-These informations are headers that will secure us to secure our application, like:
-"x-xss-protection", "cross-domain-policies", and a lot of different things.
-Like it's said by the comment: "helmet is a security middleware that helps you to
-protect your app by setting various HTTP headers".
-
-14. app.use(morgan("dev")); "dev" is an option: it will log the request.
-In fact, if we return to web page and refresh, we can see in the terminal that
-we've done GET request to the route "/test", and say that our response it not modify (304) 
-and how it took to give the response (4.885 ms).
-Normally we should assume to get 200 response, but since the response is in the cache, we got 304.
-If we cancel the cache, by doing some command in the web page, we see the responce will be 200.
-So, if response is 304, it means the response in coming from the cache.
-
-15. Another middleware: app.use(express.json());
-This will allow us to parse the incoming data, extract that json data.
-
-16. app.use(cors());
-Help us to not have cors errors in the client.
-We need also "import cors from "cors";", not specify in the tutorial.
-
-17. Now we have all middle layers. Now we can set the environment variables.
-Instead of the hardcoded value like PORT=3000, we create a ".env" file (at the same level of backend).
-PORT=3000 in .env file.
-Don't use spaces!! (NOT PORT = 3000)
-
-Go to server.js file, below "const app" write: "const PORT = process.env.PORT;".
-Port has to be all uppercase: because is a constant.
-"process.env.PORT" should come from .env.
-If we only write "console.log(PORT);" we will have in the console "Undefined" for the port,
-because we didn't use the package called "dotenv":
-"import dotenv from "dotenv";"
-And we have to wirte: "dotenv.config();"
-If we don't want to see any dotenv promotional tip (like: [dotenv@17.2.3] injecting
-env (1) from .env -- tip: 🔐 encrypt with Dotenvx: https://dotenvx.com), we can
-use "dotenv.config({ quiet: true });".
-We don't have issue about having PORT inside .env that stay at the level of backend folder
-(.env and backend at the same level, server.js inside backend), because when we run our server with
-"nodemon backend/server.js" the current working directory is "pern-app/" (where package.json is), not the
-backend folder. So, when "dotenv.config();" runs, it looks for ".env" in the current working directory, which 
-is exactly where your ".env" file is located.
-
-We can also use the command:
-const PORT = process.env.PORT || 3000;
-
-18. Before we can connect our database (postgres), we need to organize our server.js file,
-to look clearly at our request and response from database.
-We correct the route, from "/test" to "/api/parking-spots", because it has to be an API.
-app.get("/api/parkingSpots", (req, res) => {
+BACKEND:
+    1. "cd pern-app" (move to the folder "pern-app" in local computer)
     
-    // GET ALL PARKING SPOTS FROM DB
-});
+    2. "code ." (open the folder on our IDE)
+    
+    3. "mkdir backend" (create new folder "backend")
+    
+    4. "mkdir frontend" (create new folder "frontend")
+    
+    5. "nmp init -y"
+    [*]
 
-The response will be something like:
-res.status(200).json({
-    success: true,
-    data: [ 
-        { id: 1, name: "Parking spot 1" },
-        { id: 2, name: "Parking spot 2" },
-        { id: 3, name: "Parking spot 3" }    
-    ],
-});
+    6. "npm i express dotenv cors helmet morgan pg @arcjet/node"
+    (installation of packages or libraries in the main folder enviorment.
+    You can see the depencencies in package.json file under the depencencies tag)
+    
+    7. Create new file "\backend\server.js"
+    
+    8. Go to package.json, modify "main" entry point: from "index.js" to "backend/server.js"
 
-API (application Programming Interface) allows two different application to talk
-to each other. For example, we have a React application and we want to fetch some data 
-from the database, there will be a "main in the middle" which is going to be our API.
-Now, we want to set our APIs to communicate with our databaase and send a response 
-back to the client. We will call the thing above API end points from our React application 
-under the front end.
-To make all organized, we create new folders: "backend/routes" and "backend/controllers".
-In "routes" foulder create "parkingSpotRoutes.js". We're going to call express and create a router.
+    9. In package.json below "author" insert new entry point: "type": "module".
+    The default type is "commonjs". 
+    -- commonjs: const express = require("express");
+    -- module: import express from "express";
 
-import express from "express";
+    10. In server.js write:
+        ## 
+        import express from "express";
 
-const router = express.Router();
+        const app = express();
+        const PORT = 3000;
+        app.listen(PORT, () => {
+            console.log(`Server is running on port ${PORT}`);
+        });
+        ##
+    The server is running on port 3000 port. 
+    You can change the port: "app.listen(3001, ...)".
 
-export default router;
+    11. Run the server by typing in the terminal; "node backend/server.js".
+    We see: "Server is running on port 3000".
+    "[nodemon] clean exit - waiting for changes before restart" means that
+    the connection to the server is shut down.
+    To avoid having to reset the server everytime we need to use nodemon instead.
 
-In server.js we have to cancel:
-app.get("/test", (req, res) => {
-    res.send("Hello from the test route");
-});
+    12. "npm i nodemon -D".
+    In package.json there is something new: "devDependencies".
 
-For rewrite like below, that will call the API endpoint:
-app.use("/api/parkingSpots", parkingSpotRoutes);
-That will only run by insert:
-import parkingSpotRoutes from "./routes/parkingSpotRoutes.js";
-(Remember to always add the extention ".js" because we chose the "type": "modules" in the setup)
+    13. Create a script in package.json: delete the old one "test" and write
+    "dev": "nodemon backend/server.js".
+    In terminal run the server: "npm run dev".
+    If you don't see: "[nodemon] clean exit - waiting for changes before restart"
+    the connection is still on.
 
-19. In parkingSpotRoutes.js we write under "const router = express.Router();":
-router.get("/test", (req, res) => {
-    res.send("test route");
-});
-This is a test (we will see something at the route "http://localhost:3000/api/parkingSpots/test")
-We'll also have in the console in the terminal:
-GET /api/parkingSpots/test 200 11.373 ms - 10
-(look at the 200 response code)
+    14. First request in server.js:
+        ##
+        app.get("/", (req,res) => {
+            res.send("Hello from the backend");
+        });
+        ## 
+    The responce is visible in the browser: "http://localhost:3000/".
+    We can have also change the route:
+        ##
+        app.get("/test", (req,res) => {
+            res.send("Hello from the test route");
+        });
+        ##
+    The link now is: "http://localhost:3000/test".
+    At the wrong page you'll receive the message: "Cannot GET /".
 
-After a test, we write all the routes, for example:
-router.get("/", (req, res) => {
-    // GET ALL PARKING SPOTS
-});
 
-router.post("/", (req, res) => {
-    // POST A PARKING SPOT
-});
+A middleware is a function that has access to the request object (req),
+the responce object (res) and the next middleware function in the application's 
+request-responce circle. A series of steps or checkpoints that every incoming http 
+request must pass through before it reaches its final destination (the 
+route handler). Each function on the line performs a specific task on the request
+or prepares the response.
+The next parameter is what allows the processing to move forward.
 
-We know that this code will be super long, so we use the folder "controllers"
-to set all the information. Create a new file: "controllers/parkingSpotController.js".
-Adjust the content of parkingSpotRoutes.js like:
 
-import { getAllParkingSpots, createParkingSpot } from "../controllers/parkingSpotController.js";
+    15. We want to create an API. 
+    In server.js write what follows and insert middleware.
+        ##
+        import helmet from "helmet";
 
-router.get("/", getAllParkingSpots);
-router.post("/", createParkingSpot);
+        const app = express();
+        app.use(helmet());
 
-Go to the new file parkingSpotController.js:
-export const getAllParkingSpots = async (req, res) => {};
-export const createParkingSpot = async (req, res) => {}; 
+        app.get("/test", (req,res) => {
+            console.log(res.getHeaders());
+            res.send("hello from the test route");
+        });
+        ##
+    In the browser we see a lot of headers information.
+    Goal of "helmet": is a security middleware that helps to protect
+    your app by setting various HTTP headers.
+    (other configuration: 
+    app.use(helmet({ contentSecurityPolicy: false })); 
+    )
 
-Those will be async function, so we can call await.
-Are necessary also other routes, like:
-// delete parking spot
-// modify parking spot
+    16. Another middleware:
+        ##
+        import morgan from "morgan";
+        
+        const app = express();
+        app.use(morgan("dev"));
+        ##
+    "morgan" is used for logging information about the request (path, method,
+    status code, response time).
+    
+    17. Others middleware:
+        ## 
+        import express from "express";
+        import cors from "cors";
 
-Later, we will modify the logic of the two request, because for now we don't have a database.
+        app.use(express.json());
+        app.use(cors());
+        ##
+    -- express.json: to read the body of an incoming request (json data)
+    and makes it accessible on req.body.
+    -- cors: used for security, like helmet.
 
-20. Now we connect our database. 
-The tutorial boy used the enviorments arcjet and neon.
-...
+    18. Create the .env file in main folder to set the environment variables.
+    Spaces are not allow: NOT "PORT = 3000".
+    PORT has to be all uppercase because is a constant.
+    In .env file: PORT=3000
+    
+    19. Go back to server.js and write:
+        ##
+        import dotenv from "dotenv";
 
-21. Create a new folder "config" inside "backend". Inside will be "db.js".
-With this file, we can connect with our database.
-Inside the file:
+        dotenv.config({ quiet: true });
+        const PORT = process.env.PORT || 3000;
+        ##
+    "quiet: true" is used to hide in the console any dotenv promotional tip.
+    When "dotenv.config()" runs, it looks for ".env" in the current working
+    directory (pern-app) which is exactly where your ".env" file is located.
 
-import { neon } from "@neondatabase/serverless";
-import dotenv from "dotenv"; 
+    20. Change the root for the request: "/api/parkingSpots".
+    For example, the get request to all the elements from the database give the responce:
+        ##
+        res.status(200).json({
+            success: true,
+            data: [ 
+                { id: 1, name: "Parking spot 1" },
+                { id: 2, name: "Parking spot 2" },
+                { id: 3, name: "Parking spot 3" }    
+            ],
+        });
+        ##
+    
+    21. To organize all the requests, we create two files under two new folders:
+    -- routes > parkingSpostRoutes.js
+    -- controllers > parkgingSpotControllers.js
+    In server.js we delete the testing route:
+        ##
+        app.get("/api/parkingSposts", (req,res) => {
+            res.send("Hello from the test route");
+        });
+        ##
+    and add teh code below that will call the API endpoint:
+        ##
+        import parkingSpotRoutes from "./routes/parkingSpotRoutes.js";
 
-dotenv.config();
+        app.use("/api/parkingSpots", parkingSpotRoutes);
+        ##
+    This is another example of routing middleware: directs the request to the
+    correct handler function based on the URL path.
+    
+    22. In parkingSpostRoutes write:
+        ##
+        import express from "express";
+        import { getParkingSpots, getParkingSpot, createParkingSpot, updateParkingSpot, deleteParkingSpot } from "../controllers/parkingSpotController.js";
 
-const { PGHOST, PGDATABASE, PGUSER, PGPASSWORD } = process.env;
+        const router = express.Router();
 
-Dotenv is necessary to access some enviorment variables (in .env file).
-Also:
+        router.get("/", getParkingSpots); 
+        router.get("/:id", getParkingSpot); 
+        router.post("/", createParkingSpot);
+        router.put("/:id", updateParkingSpot);
+        router.delete("/:id", deleteParkingSpot);
 
-// Creates a SQL connection using our env enviorment
-export const sql = neon(
-    `postgresql://${PGUSER}:${PGPASSWORD}@${PGHOST}/{PGDATABASE}?sslmode=require`
-);
+        export default router;
+        ##
+    Take for example "router.get("/", getParkingSpots)": if we do a get request at the endpoint obtained by adding 
+    at the end of the base url (http://localhost:300/api/parkingSposts) the "/", we will obtain something from 
+    the function "getParkingSpots" in the parkingSpotControllers.js file. 
+    
+    23. For now, only write the function called from the parkingSpotRoutes.js file, without the body:
+        ##
+        export const getParkingSpots = async (req, res) => {};
+        export const getParkingSpot = async (req, res) => {}; 
+        export const createParkingSpot = async (req, res) => {};
+        export const updateParkingSpot = async (req, res) => {}; 
+        export const deleteParkingSpots = async (req, res) => {};
+        ##
+    Later, we will modify the logic of the requests. Now we don't have the connection to a database
 
-/* This sql function we export is used as a tagged template literal, which allows
-us to write SQL queries safely */
+    24. Now we connect our database. 
+    Why don't commit the database: the local database contains sensitive data, large files and
+    local machine depencencies. The correction solution to connect to it is to use (in the future)
+    Docker Compose. For now, we can create in the backend code the essential instructions to
+    define the database structure.
+    In backend folder create: config > db.js.
+        ##
+        import { Client } from "pg";
+        import dotenv from "dotenv";
 
-22. In "server.js" file we need a function to initialize the database.
-import { sql } from "./config/db.js";
+        dotenv.config();
+        const { PGHOST, PGUSER, PGPORT, PGPASSWORD, PGDATABASE } = process.env;
 
-async function initDB() {
-    try {
-        ...
-    } catch (error) {
-        console.log("Error initDB", error);
-    }
-}
+        const con = new Client({
+            host: PGHOST || "localhost",
+            user: PGUSER || "postgres",
+            port: PGPORT || 5432,
+            password: PGPASSWORD,
+            database: PGDATABASE || "bicycledb"
+        });
 
-In the try section we want to create a table called parkingSpots.
-We write await to get this SQL function from the "config/db.js";
-and this is what we called a tagged template literal that'll be using.
-try {
-    await sql`
-        CREATE TABLE IF NOT EXISTS parkingspots (
-            id SERIAL PRIMARY KEY,
-            street VARCHAR(255) NOT NULL,
-            tot_available INTEGER NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    `;
+        con.connect()
+            .then(() => console.log("Connected to database"))
+            .catch(err => console.error("Connection error: ", err));
 
-    console.log("Database initialized successfully");
-}
-(Remember that this is a test for the real database for parking spots)
-For id: "SERIAL" because we want to have all the parking spots in sequel ids.
+        export const sql = con;
+        ##
+    
+    25. Create the environment variables in .env file:
+        ##
+        PORT=3000
 
-We want to run the server only if database is ready.
-We change this:
-app.listen(PORT, () => {
-    console.log("Server is running on port " + PORT);
-});
+        PGUSER=postgres
+        PGPASSWORD='password'
+        PGHOST=localhost
+        PGDATABASE=bicycledb
+        PGPORT=5432
+        ##
 
-In this:
-initDB().then(() => {
-    app.listen(PORT, () => {
-        console.log("Server is running on port " + PORT);
-    });
-});
 
-23. Next, we will build our controllers.
-Add some routes in "routes/parkingSpotRoutes.js":
-router.get("/", getParkingSpots); // Modify getAllParkingSpots in getParkingSpots
-router.get("/:id", getParkingSpot); // For a specific parking spot
-router.post("/", createParkingSpot);
-router.put("/:id", updateParkingSpot);
-router.delete("/:id", deleteParkingSpot);
+To fill the environment variables go to pgAdmin4 application:
+-- Servers > PostgreSQL18 > properties > connection
+    
 
-Then, modify the same function in "controllers/parkingSpotController.js":
-export const getParkingSpots = async (req, res) => {};
-export const getParkingSpot = async (req, res) => {}; 
-export const createParkingSpot = async (req, res) => {};
-export const updateParkingSpot = async (req, res) => {}; 
-export const deleteParkingSpot = async (req, res) => {};
+    26. Go now in server.js file to initialize new table in the database:
+        ##
+        import { sql } from "./config/db.js";
 
-Don't forget to adjust in "parkingSpotRoutes.js":
-import { getParkingSpots, getParkingSpot, createParkingSpot, updateParkingSpot, deleteParkingSpot } from "../controllers/parkingSpotController.js";
-
-If we visit in browser: "http://localhost:3000/api/parkingSpots/",
-we'll be in loading state because we didn't already say something in the function:
-router.get("/", getParkingSpots);
-export const getParkingSpots = async (req, res) => {};
-
-For now, we've deciding to use local database connection.
-Changes in the file:
-    - .env:
-    "
-    # Local PostgreSQL configuration
-    PGUSER=postgres
-    PGPASSWORD=4rancEsc@!
-    PGHOST=localhost
-    PGDATABASE=dbs
-    PGPORT=5432
-    "
-    - db.jd:
-    "
-    import { Client } from "pg";
-    import dotenv from "dotenv";
-
-    dotenv.config();
-
-    const { PGHOST, PGUSER, PGPORT, PGPASSWORD, PGDATABASE } = process.env;
-
-    const con = new Client({
-        host: PGHOST || "localhost",
-        user: PGUSER || "postgres",
-        port: PGPORT || 5432,
-        password: PGPASSWORD,
-        database: PGDATABASE || "dbs"
-    });
-
-    con.connect()
-    .then(() => console.log("Connected to database"))
-    .catch(err => console.error("Connection error: ", err));
-
-    export const sql = con;
-    "
-    - server.js
-    "
-    import { sql } from "./config/db.js";
-    [...]
-    async function initDB() {
-        try {
-            await sql.query(`
-                CREATE TABLE IF NOT EXISTS parkingspots (
-                    id SERIAL PRIMARY KEY,
-                    street VARCHAR(255) NOT NULL,
-                    tot_available INTEGER NOT NULL,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            `);
+        async function initDB() {
+            try {
+                await sql.query(`
+                    CREATE TABLE IF NOT EXISTS parkingArea (
+                        id SERIAL PRIMARY KEY,
+                        street VARCHAR(255) NOT NULL,
+                        tot_available INTEGER NOT NULL,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                `);
 
             console.log("Database initialized successfully");
-        } catch (error) {
-            console.log("Error initDB", error);
-            process.exit(1);
+            
+            } catch (error) {
+                console.log("Error initDB:", error);
+                process.exit(1);
+            }
         }
-    }
+        ##
+    We create a table called "parkingArea" that has these characteristics:
+    -- id: unique id, "serial" to have all the parking spots in sequel ids
+    -- street: where the parking spot is located 
+    -- tot_available: number of total slots in the bicycle parking spot
+    -- created_at: indicates at what time the element is created
+    
 
-    initDB().then(() => {
-        app.listen(PORT, () => {
-            console.log("Server is running on port " + PORT);
-        });
-    });
-    "
+To see the new table created in local database application (pgAdmin4):
+-- Servers > PostgreSQL18 > bicycledb > Schemas > public > Tables > parkingArea > View/Edit data > All rows
+To add some values to the table:
+-- bicycledb > Schemas > public > Tables > parkingsposts > Query tool
 
-Tutorial used for changes: https://www.youtube.com/watch?v=VaJPdtuql8k
-To see the information needed for .env setup, go to pgAdmin4 application,
-click on: "Servers->PostgreSQL18->properties->connection"
-Don't forget to: "npm install pg"
-To see the new table created, go to "Servers->PostgreSQL18->dbs->Schemas->public->Tables",
-now click on "parkingSpots->View/Edit data->All rows".
+-- One row at a time:
+   INSERT INTO parkingArea (street, tot_available)
+   VALUES ('Via Cirro', 10)
+   RETURNING id;
 
-To add some values to the table, click on "dbs->Schemas->public->Tables->parkingsposts->Query tool",
-and type:
-- One row at a time:
-"
-INSERT INTO parkingspots (street, tot_available)
-VALUES
-    ('Via Cirro', 10)
-RETURNING id;
-"
-- Multiple rows at a time:
-"
-INSERT INTO parkingspots (street, tot_available)
-VALUES
- 	('Via Marziale', 5),
+   -- Multiple rows at a time:
+   INSERT INTO parkingArea (street, tot_available)
+   VALUES
+    ('Via Marziale', 5),
 	('Via Roma', 18),
 	('Via Garibaldi', 7)
-RETURNING id;
-"
-- To see all the changes:
-"SELECT * FROM parkingspots;"
+   RETURNING id;
 
-What "RETURNING id" does: when you insert new rows, PostgreSQL automaticaly creates
-ids (because id is SERIAL, at the time of the table creation).
-RETURNING id tells Postgres to: after inserting the rows, give me back the ids you created, 
-and using pgAdmin, the ids will be show directly in the Data Output tab.
-Same insert in javascript enviorment:
-"
-const result = await sql.query(`
-  INSERT INTO parkingspots (street, tot_available)
-  VALUES 
-    ('Via Marziale', 5),
-    ('Via Roma', 3)
-  RETURNING id;
-`);
-"
-Remember not to use "..." but '...'.
+Meaning of "RETURNING id": after inserting the rows, gives back the
+ids created. Remember not to use "..." but '...'.
 
------------------
-
-24. Now, we complete the route function one by one.
-We are not returning anything, so the browser is in loading state when we type a specific route of "parkingSpotRoutes.js".
-We need to import sql from "db.js" file, to asking query to the database:
-"import { sql } from '../config/db.js';"
-First route:
-- get(All)ParkingSpots in "parkingSpotControllers.js":
-"
-try {
-        const spots = await sql.query(`
-            SELECT * FROM parkingspots -> // * gave all the column 
-            ORDER BY created_at DESC -> // order by the created_at field in the descending order
-        `);
-        # Then, we assign this into a variable called "sposts"
-        # and return this as a responce 
-        console.log(`Found ${spots.rows.length} parking spots`);
-        res.status(200).json({ success: true, data: spots.rows }); # -> 200 if the get is succesfully done
-    } catch (error) {...};
-"
-
-What we see in the page at route "http://localhost:3000/api/parkingSposts/" is just:
-- With no elements: "{"success":true,"data":[]}"
-- With some anticipated insert: 
-{"success":true,"data":{"command":"SELECT","rowCount":4,"oid":null,"rows":[{"id":4,"street":"Via Cirro","tot_available":10, ...}
-
-Complete with "catch" section.
+To see all the changes:
+-- SELECT * FROM parkingArea;
 
 
-25. We go with createParkingSpot().
-First, we want to get some data that user will send us, because they want to create a new parking spot.
-They're all coming from req.body:
-"const { street, tot_available } = req.body; "
-It's possible by the middleware "app.use(express.json());": with this, we can
-destructure these values from the request body.
-We create an "if" instruction if user didn't send us one of them. 
-"if (!street || !tot_available) {
-    return res.status(400).json({ success: false, message: "All fields are required" })
-}"
-
-Maybe, also some control inserting numbers for "tot_available".
-
-Then, the try-and-catch block:
-"
-try {
-        const newSpot = await sql.query(`
-            INSERT INTO parkingspots (street, tot_available)
-            VALUES ($1, $2)
-            RETURNING *`,
-            [street, tot_available]
-            );
-        // Safer than using: ${street} ${tot_available}
-
-        // console.log("New spot created");
-        res.status(201).json({ success: true, data: newSpot.rows[0] });
-
-    } catch (error) {...};
-};
-"
-
-"newSpot" is a record ([]), so we write newSpot.rows[0] to get the newky created spot.
-We're going to test this function with a desktop application in the next moment: Postman.
-
-
-26. Continue to fill the other function: getParkingSpot (get only one spot).
-In "parkingSpotRoutes.js" file, the routes to call the function is:
-"router.get("/:id", getParkingSpot);"
-Note that the parameter "id" has to be in repeated in the body function of getParkingSpot.
-(if I choose idx -> then I have to recall the param idx).
-
-"
-export const getParkingSpot = async (req, res) => {
-    const { id } = req.params;
-
-    try {
-        const spot = await sql.query(`
-            SELECT * FROM parkingspots WHERE id=$1`,
-            [id]
-        );
-        // Remember the comma (,) !!
-        // Safer than: `SELECT * FROM parkingspots WHERE id=${id}`
-
-        // Check if the spot exists
-        if (spot.rows.length === 0) {
-            return res.status(404).json({
-                success: false,
-                message: "Parking spot not found"
+    27. Once we have the right to connect to the database and the code to create the 
+    initial table, now we will run the server only after the database is ready.
+    In server.js change this:
+        ##
+        listen(PORT, () => {
+            console.log("Server is running on port " + PORT);
+        });
+        ##
+    To this:
+        ##
+        initDB().then(() => {
+            app.listen(PORT, () => {
+                console.log("Server is running on port " + PORT);
             });
-        }
+        });
+        ##
+    
+    28. Now we build all the controllers, all the crud operations.
+    We're going to test the functions later with POSTMAN.
+    If we visit in the browser: "http://localhost:3000/api/parkingSpots/",
+    will be in loading state due to the empty body in the functions.
+    So, let's write the function getParkingSpots:
+        ##
+        import { sql } from "../config/db.js";
 
-        res.status(200).json({ success: true, data: spot.rows[0] });
-
-    } catch (error) {...};
-}; 
-"
-
-27. It's time for: updateParkingSpot
-Function need to refer to the right element in the table.
-Always pay attention to the route that leads to the function (from parkingSpotRoutes to
-parkingSpotController). In this case, in the routes file: router.put("/:id", updateParkingSpot);
-has id parameter: "const { id } = req.params;"
-
-Because the user would like to update one of this fields, or maybe all of them,
-they are both required (maybe that can change in the next update).
-"
-const { street, tot_available } = req.body;
-
-try {
-    const updatedSpot = await sql.query(`
-        UPDATE parkingspots
-        SET street=$1, tot_available=$2
-        WHERE id=$3
-        RETURNING *`,
-        [street, tot_available, id]
-    );
-
-    # We also add a check
-    if (updatedSpot.length === 0) { # If correct, that means product is not found
-        return res.status(404).json({ success: false, message: "Spot not found"});
-    }
+        export const getParkingSpots = async (req, res) => {
+            try {
+                const spots = await sql.query(`
+                    SELECT * FROM parkingArea
+                    ORDER BY created_at DESC
+                `);
         
-    console.log("Succesfully updated");
-    res.status(200).json({ success: true, data: updatedSpot.rows[0] });
+            console.log(`Found ${spots.rows.length} parking spots`);
+            res.status(200).json({
+                success: true,
+                data: spots.rows
+            });
 
-} catch (error) {...};
-"   
+            } catch (error) {
+                console.log("Error in getParkingSpots function", error);
+                res.status(500).json({
+                    success: false,
+                    message: "Failed to fetch parking spots",
+                    details: error.message
+                }); 
+            };
+        };
+        ##
+    Visiting now the page at route "http://localhost:3000/api/parkingSposts/" is:
+    -- With no elements: {"success":true,"data":[]}
+    -- With some anticipated insert: 
+    {"success":true,"data":{"command":"SELECT","rowCount":4,"oid":null,"rows":[{"id":4,"street":"Via Cirro","tot_available":10, ...]}}
+
+    29. We go with createParkingSpot().
+    We get some data that user will send us, coming from req.body: { street, tot_available }.
+    The extraction is possible by the middleware "express.json()".
+        ##
+        export const createParkingSpot = async (req, res) => {
+            const { street, tot_available } = req.body;
+
+            # Validation 
+            if (!street || !tot_available) {
+                return res.status(400).json({
+                    success: false,
+                    message: "All fields are required"
+                });
+            }
+
+            # Validate tot_available is a number
+            const totalAvailable = parseInt(tot_available);
+            if (isNaN(totalAvailable) || totalAvailable < 0) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Total available parking spots must be a positive number"
+                });
+            }
+
+            try {
+                const newSpot = await sql.query(`
+                    INSERT INTO parkingArea (street, tot_available)
+                    VALUES ($1, $2)
+                    RETURNING *`,
+                    [street, totalAvailable]
+                ); # Safer than using: ${street} ${tot_available}
+
+                console.log("New spot created");
+                res.status(201).json({
+                    success: true,
+                    data: newSpot.rows[0]
+                }); # "newSpot" is a record ([]), so newSpot.rows[0] get the newky created spot
+
+            } catch (error) {
+                # [...]    
+            };
+        };
+        ##
+    
+    30. getParkingSpot is similar to getParkingSpots but get only one spot.
+    In parkingSpostRoutes the call is: router.get("/:id", getParkingSpot);
+    The parameter "id" has to be in the body function of getParkingSpot.
+    (if I choose idx -> then I have to recall the param idx).
+        ##
+        export const getParkingSpot = async (req, res) => {
+            const { id } = req.params; --> # THE ID PARAMS
+            
+            try {
+                const spot = await sql.query(`
+                    SELECT * FROM parkingArea WHERE id=$1`, # Remember the comma (,) !!
+                    [id] # Safer than: `SELECT * FROM parkingspots WHERE id=${id}`
+                );
+
+                # Check if the spot exists
+                if (spot.rows.length === 0) {
+                    return res.status(404).json({
+                        success: false,
+                        message: "Parking spot not found"
+                    });
+                }
+        
+                console.log("Fetched spot");
+                res.status(200).json({
+                    success: true,
+                    data: spot.rows[0]
+                });
+
+            } catch (error) {
+                # [...]
+            };
+        }; 
+        ##
+
+    31. updateParkingSpot, in the routes file: "router.put("/:id", updateParkingSpot)".
+    Because the user would like to update one of this fields, or maybe all of them,
+    they are both required (maybe that can change in the next update).
+        ##
+        export const updateParkingSpot = async (req, res) => {
+            const { id } = req.params;
+            const { street, tot_available } = req.body;
+    
+            try {
+                const updatedSpot = await sql.query(`
+                    UPDATE parkingArea
+                    SET street=$1, tot_available=$2
+                    WHERE id=$3
+                    RETURNING *`,
+                    [street, tot_available, id]
+                );
+                
+                # We also add a check
+                if (updatedSpot.length === 0) { # If correct, that means product is not found
+                    return res.status(404).json({
+                        success: false,
+                        message: "Spot not found"
+                    });
+                }
+        
+                console.log("Succesfully updated");
+                res.status(200).json({
+                    success: true,
+                    data: updatedSpot.rows[0]
+                });
+
+            } catch (error) {
+                # [...]
+            };
+        };
+        ##
+    
+
+    32. Last one function: deleteParkingSpot.
+    It's very similar to updateParkingSpot.
 
 
-28. Last one function: deleteParkingSpot.
-It's very similar to updateParkingSpot.
-
-"
-export const deleteParkingSpot = async (req, res) => {
-    const { id } = req.params;
-
-    try {
-        const deletedSpot = await sql.query(`
-            DELETE * FROM parkingspots WHERE id=$1
-            RETURNING *`,
-            [id]
-        );
-
-        if(deletedSpot.length === 0) {
-            return res.status(404).json({ succes: false, message: "Spot not found" });
-        }
-
-        console.log("Parking spot removed");
-        res.status(200).json({ success: true, message: deletedSpot.rows[0] });
-
-    } catch (error) {...};
-};
-"
-
-This was all the CRUD operations.
-
-------------------
-
-29. Having all the routes and the controllers, test them out in Postman application.
-Create new workspace from a blank project (top). Create new blank collection called "PARKINGSPOTS" (top-left).
-Create new request ("+" in PARKINGSPOTS collection). 
-
-This will be a GET request: rename it "GET ALL PARKING SPOTS".
+Test the function of parkingSpotControllers in Postman.
+Soon we will do the same request from the frontend application.
+-- New workspace from a blank project > call it "PARKINGAREA" > create new request ("+" in PARKINGAREA collection)
+For get request: rename it "GET ALL PARKING SPOTS".
 Type the endpoint: "http://localhost:3000/api/parkingSpots/" 
-(remember: 
-    - from "server.js" file: "app.use("/api/parkingSpots", parkingSpotRoutes);"
-    (so, the "/api/parkingSposts")
-    - from "parkingSpotRoutes": "router.get("/", getParkingSpots);"
-    (so, the "/")
-The result is the final endopoint)
+REMEMBER: the server have to be online!
+"PS C:\Users\mazze\pern-app> npm run dev", until the the log message "Server is running on port 3000".
+Conclude the Postman request with "send": the responce status will be "200 OK". 
 
-Attention: the server need to be online!
-"PS C:\Users\mazze\pern-app> npm run dev" -> see the log message "Server is running on port 3000".
-
-The responce status will be: 200 OK. 
-
-
-Create new request: POST, "CREATE NEW PARKING SPOT".
-Go to the body section and have a reference to the createParkingSpot function:
--> "const { street, tot_available } = req.body;"
-The API request don't need a params (no id), but in the body is necessary (both):
+Do same thing with the other functions: POST, "CREATE NEW PARKING SPOT".
+In the body section insert "street" and "tot_available", like in the parkingSpotControllers code:
 {
     "street":"Via ...",
-    "tot_available":40 -> positive number!
+    "tot_available":40 # positive number!
 }
-
 Responce will be:
 {
     "success": true,
@@ -596,148 +495,188 @@ Responce will be:
         "created_at": "2025-11-21T11:03:32.529Z"
     }
 }
-
 You can control the newly row by the "GET ALL PARKING SPOTS" API request.
 
 Other request: GET, "GET A SINGLE PARKING SPOT", with endopoint "http://localhost:3000/api/parkingSpots/:id".
-To get a specific element, we can:
-- Insert the id in the params section (in "Path Variables", in corrisponce of "id")
-- Change the "/:id" with the specific one, like "http://localhost:3000/api/parkingSpots/4"
-
+For the "id" params:
+-- Insert the id in the params section (Path Variables > id)
+-- Change the "/:id" with the specific one, like "http://localhost:3000/api/parkingSpots/4"
 Sending the request, you'll receive "success:true" with all the attributes.
 
 Request: DELETE, "DELETE A SINGLE PARKING SPOT".
 Like the GET request, insert the id of the parking spot.
 
 Request: PUT, "UPDATE PARKING SPOT".
-For now, we are receiving both the elements in request body for "street" and "tot_available", like:
+For now, is necessary both elements "street" and "tot_available", even if they remain unchanged:
 {
     "street":"Via Don Bedetti 89",
     "tot_available":5
 }
-For example, if you want to update only the street name, the number of total spots is still needed,
-even if they remain unchanged.
 In params body, insert also the id number.
 
-Next, we will do the same request from the frontend application.
 
-------------------
+    33. Implementation of rate limiting, for limiting network traffic. 
+    It puts a limit on how often someone can repeat an action within a certain timeframe
+    (like a malicious user that wants to send 1000 req/sec).
+    Our server would crash in that case, we can't handle that amount of requests per sec.
+    So, we're going to put a limit: every user can only send x requests per minute.
+    We can keep track of single user or all of them by the IP address.
+    We're implementing also bot detection and Shield.
 
-30. Definition of rate limiting: strategy for limiting network traffic. 
-It puts a limit on how often someone can repeat an action within a certain timeframe.
-Let's think about a malicious/bad user that wants to send 1000 req/sec.
-Our server would crash in that case, we can't handle that amount of requests per sec.
-So, we're going to put a limit: every user can only send 20 requests per minute.
-How we can keep track of single user or all of them: by the IP address.
-Also, we're implementing bot detection and Shield.
+    Go to official documentation of Arcjet: arcjet > Docs > Node.js + Express
+    (https://docs.arcjet.com/get-started?f=node-js-express):
+    Requested:
+    -- "npm install express": already done
+    -- "npm i @arcjet/node @arcjet/inspect"
+    -- Set the keys in .env file:
+        ##
+        ARCJET_KEY=... (copy when creating new account)
+        ARCJET_ENV=development (tells Arcjet you're working locally)
+    
+    34. To complete the arcjet installation, we add some code in: lib > arcjet.js
+    "lib" is chose for configure third parties libraries.
+    Then look and copy from the documentation:
+        ##
+        import arcjet, { tokenBucket, shield, detectBot } from "@arcjet/node";
 
-Go to "Arcjet->Docs->Node,js + Express" (https://docs.arcjet.com/get-started?f=node-js-express):
-- "npm install express" -> Already done
-- "npm i @arcjet/node @arcjet/inspect" -> Need to install inspect (updated in the last year)
-- Set the keys (in ".env" file):
---> ARCJET_KEY=...: copy when creating new account
---> ARCJET_ENV=development: tells Arcjet you're working locally,
-so it will accept your local IP address (127.0.0.1 or localhost).
-Needed because Node.js doesn't set NODE_ENV for you.
-- We add some code in a new folder, specifically for Arcjet porpouse:
---> "Backend->lib->arcjet.js"
-("lib" for configure third parties libraries)
-Then look and copy from the documentation.
+        const aj = arcjet({ # Initialize Arcjet
+            key: process.env.ARCJET_KEY,
+            characteristics: ["ip.src"],
+            rules: [
+                shield({ mode:"LIVE" }),
+                detectBot({
+                    mode:"LIVE",
+                    allow:["CATEGORY:SEARCH_ENGINE"],
+                }),
+                tokenBucket({
+                    mode: "LIVE",
+                    refillRate: 30,
+                    interval: 5,
+                    capacity: 20
+                }),
+            ],
+        });
 
-arcjet.js:
-"
-import arcjet, { tokenBucket, shield, detectBot } from "@arcjet/node";
+        export { aj };
+        ##
+    "tokenBucket" algorithm params:
+    -- refillRate: 30 (how many tokens we're going to get)
+    -- interval: 5 (seconds)
+    -- capacity: 20 (tokens)
+    -- requested: 1 (each request consumes 1 token)
+    Initialization with 20 tokens, to be used within 5 seconds.
+    After the interval time has elapsed, there is a refill of 30 tokens.
+    Other algorithm: slidingWindows (instead of tokenBucket).
 
-// Initialize Arcjet
-const aj = arcjet({
-    key: process.env.ARCJET_KEY,
-    characteristics: ["ip.src"],
-    rules: [
-        shield({ mode:"LIVE" }),
-        detectBot({
-            mode:"LIVE",
-            allow:["CATEGORY:SEARCH_ENGINE"],
-        }),
-        tokenBucket({
-            mode: "LIVE",
-            refillRate: 5,
-            interval: 10,
-            capacity: 10
-        }),
-    ],
-});
+    Other consideration: it's not necessary to call "dotenv" package must be the first import in entry file (server.js),
+    so environment variables are loaded before any other module tries to use them.
+    We don't need to import dotenv also in "arcjet.js" file.
 
-export { aj };
-"
+    35. In server.js connect arcjet:
+        ##
+        import { aj } from "./lib/arcjet.js";
+        import { isSpoofedBot } from "@arcjet/inspect";
 
-tokenBucket algorithm params:
-- refillRate: 5 (how many tokens we're going to get)
-- interval: 10 (seconds)
-- capacity: 10 (tokens)
-- requested: 1 (each request consumes 1 token)
+        app.use(async (req,res,next) => {
+            try {
+                const decision = await aj.protect(req, { requested:1 });
 
-With capacity of 10, initially we have 10 tokens:
-0s: 10 tokens
-1s: make 3 req -> 7 tokens left 
-2s: make 3 req -> 4 tokens left
-3s: make 4 req -> 0 tokens left (capacity)
-4s: try req -> rate limited
-10s (interval): refill (+ 5 tokens)
-20s: refil (+5 tokens)
-
-Other algorithm: slidingWindows (instead of tokenBucket).
-Unfortunetly, we can actually test this out only from the homepage (frontend).
-
-In "server.js":
-"
-[...]
-import { aj } from "./lib/arcjet.js";
-import { isSpoofedBot } from "@arcjet/inspect";
-[...]
-
-// Middleware
-[...]
-
-// Apply Arcjet rate limit to all route
-// Just below Middleware
-app.use(async (req,res,next) => {
-    try {
-        const decision = await aj.protect(req, { requested:1 });
-
-        if (decision.isDenied()) {
-            if (decision.reason.isRateLimit()) {
-                return res.status(429).json({ error: "Too many requests" });
-            } else if (decision.reason.isBot()) {
-                return res.status(403).json({ error: "No bots allowed" });
-            }
-            return res.status(403).json({ error: "Forbidden" });
+                if (decision.isDenied()) {
+                    if (decision.reason.isRateLimit()) {
+                        return res.status(429).json({ error: "Too many requests" });
+                    } else if (decision.reason.isBot()) {
+                        return res.status(403).json({ error: "No bots allowed" });
+                    }
+                    return res.status(403).json({ error: "Forbidden" });
             
-        } else if (decision.ip.isHosting()) {
-            return res.status(403).json({ error: "Forbidden" });
+                } else if (decision.ip.isHosting()) {
+                    return res.status(403).json({ error: "Forbidden" });
             
-        } else if (decision.results.some(isSpoofedBot)) {
-            return res.status(403).json({ error: "Forbidden" });
-            
-        } 
+                } else if (decision.results.some(isSpoofedBot)) {
+                    return res.status(403).json({ error: "Forbidden" });
+                } 
         
-        next();
+                next();
 
-    } catch (error) {
-        console.log("Arcjet error", error);
-        next(error);
+            } catch (error) {
+                console.log("Arcjet error", error);
+                next(error);
+            }
+        });
+        ##
+    
+    36. To seeding the database, create a new folder in "backend".
+    "seeds", and then the file "spots.js".
+    Seeding the database mean that we'll just add some test data tjat we can use.
+    In the development process you would like to just add the data into the db, 
+    instead of creating manually.
+    "
+    import { sql } from "../config/db.js";
+
+    const SAMPLE_SPOTS = [
+        {
+            street: "Via Zamboni 33",
+            tot_available: 30,
+        },
+        {
+            street: "Via Antonio 9/3a",
+            tot_available: 15,
+        },
+    ];
+
+    async function seedDatabase() {
+        try {
+            // First, clear existing data
+            await sql.query(`TRUNCATE TABLE parkingspots RESTART IDENTITY`);
+
+            // Insert all spots
+            for (const spot of SAMPLE_SPOTS) {
+                await sql.query(`
+                    INSERT INTO parkingspots (street, tot_available)
+                    VALUES ($1, $2)`,
+                [spot.street, spot.tot_available]
+            );
+            }
+
+            console.log("Database seeded successfully");
+            process.exit(0); // Success code
+
+        } catch (error) {
+            console.error("Error seeding database:", error);
+            process.exit(1); // Failed code
+        }
     }
-});
 
-app.use("/api/parkingSpots", parkingSpotRoutes);
+    seedDatabase();
+    "
+    We're testing the function by opening new terminal:
+    "...\pern-app> node backend/seeds/spots.js" and run.
+    Now If you refresh on the web app, you will see the newly database.
 
-[...]
-"
-"mport dotenv/config" must be the first import in entry file (server.js),
-so environment variables are loaded before any other module tries to use them.
-We don't need to import dotenv also in "arcjet.js" file.
+
+
+
+
+
 
 
 --------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 FRONTEND IMPLEMENTATION
 We'll create frontend application.
@@ -1681,68 +1620,7 @@ const handleDelete = async () => {
 We can also use Link to navigate users to the different pages.
 
 
-22. To seeding the database, create a new folder in "backend".
-"seeds", and then the file "spots.js".
-Seeding the database mean that we'll just add some test data tjat we can use.
-In the development process you would like to just add the data into the db, 
-instead of creating manually.
-"
-import { sql } from "../config/db.js";
 
-const SAMPLE_SPOTS = [
-    {
-        street: "Via Zamboni 33",
-        tot_available: 30,
-    },
-    {
-        street: "Via Antonio 9/3a",
-        tot_available: 15,
-    },
-];
-
-async function seedDatabase() {
-    try {
-        // First, clear existing data
-        await sql.query(`TRUNCATE TABLE parkingspots RESTART IDENTITY`);
-
-        // Insert all spots
-        for (const spot of SAMPLE_SPOTS) {
-            await sql.query(`
-                INSERT INTO parkingspots (street, tot_available)
-                VALUES ($1, $2)`,
-            [spot.street, spot.tot_available]
-        );
-        }
-
-        console.log("Database seeded successfully");
-        process.exit(0); // Success code
-
-    } catch (error) {
-        console.error("Error seeding database:", error);
-        process.exit(1); // Failed code
-    }
-}
-
-seedDatabase();
-"
-We're testing the function by opening new terminal:
-"...\pern-app> node backend/seeds/spots.js" and run.
-Now If you refresh on the web app, you will see the newly database.
-
-- Go to "server.js" and modify "app.use(helmet());":
-"
-app.use(helmet({
-    contentSecurityPolicy: false,
-}));
-"
-(Because in the tutorial there was a problem rendering the images)
-
-- Go to "arcjet.js" and change the rate limiting params:
-"
-refillRate: 30,
-interval: 5,
-capacity: 20,
-"
 
 ########################
 
@@ -1868,3 +1746,43 @@ ATTENZIONE:
 non avrà id 4, ma id 5.
 - pur volendo modificare un solo attributo con updateParkingSpot, è necessario
 inserire tutti gli elementi (bot required)
+
+
+
+#################
+
+created docker file for the react client.
+FROM node:14-slim
+
+WORKDIR /usr/src/app
+
+COPY ./package.json ./
+COPY ./yarn.lock ./
+
+RUN yarn install
+
+COPY . .
+
+EXPOSE 3000
+
+CMD ["yarn", "start"]
+
+
+In server:
+FROM node:14-slim
+
+WORKDIR /usr/src/app
+
+COPY ./package.json ./
+COPY ./yarn.lock ./
+
+RUN yarn install
+
+COPY . .
+
+EXPOSE 5000
+
+CMD ["index.js"]
+
+
+docker-compose.yml

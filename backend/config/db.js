@@ -9,7 +9,7 @@ const con = new Client({
     user: PGUSER || "postgres",
     port: PGPORT || 5432,
     password: PGPASSWORD,
-    database: PGDATABASE || "dbs"
+    database: PGDATABASE || "bicycledb"
 });
 
 con.connect()

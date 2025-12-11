@@ -3,7 +3,7 @@ import { sql } from "../config/db.js";
 export const getParkingSpots = async (req, res) => {
     try {
         const spots = await sql.query(`
-            SELECT * FROM parkingspots
+            SELECT * FROM parkingArea
             ORDER BY created_at DESC
         `);
         
@@ -28,7 +28,7 @@ export const getParkingSpot = async (req, res) => {
 
     try {
         const spot = await sql.query(`
-            SELECT * FROM parkingspots WHERE id=$1`,
+            SELECT * FROM parkingArea WHERE id=$1`,
             [id]
         );
 
@@ -78,7 +78,7 @@ export const createParkingSpot = async (req, res) => {
 
     try {
         const newSpot = await sql.query(`
-            INSERT INTO parkingspots (street, tot_available)
+            INSERT INTO parkingArea (street, tot_available)
             VALUES ($1, $2)
             RETURNING *`,
             [street, totalAvailable]
@@ -106,7 +106,7 @@ export const updateParkingSpot = async (req, res) => {
     
     try {
         const updatedSpot = await sql.query(`
-            UPDATE parkingspots
+            UPDATE parkingArea
             SET street=$1, tot_available=$2
             WHERE id=$3
             RETURNING *`,
@@ -141,7 +141,7 @@ export const deleteParkingSpot = async (req, res) => {
 
     try {
         const deletedSpot = await sql.query(`
-            DELETE FROM parkingspots WHERE id=$1
+            DELETE FROM parkingArea WHERE id=$1
             RETURNING *`,
             [id]
         );
